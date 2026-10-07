@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clariva — Operator Workspace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F4EF;
+    --surface:#FFFFFF;
+    --ink:#1C2321;
+    --ink-soft:#636D67;
+    --ink-faint:#98A19B;
+    --line:#E4E1D6;
+    --line-soft:#EDEBE2;
+    --teal:#2C5F58;
+    --teal-soft:#E3ECEA;
+    --clay:#B9793F;
+    --clay-soft:#F5E9DA;
+    --blue:#3D6EA6;
+    --blue-soft:#E4ECF3;
+    --success:#3F7D5C;
+    --success-soft:#E1EDE5;
+    --warning:#B8791F;
+    --warning-soft:#F6ECDA;
+    --danger:#B1483A;
+    --danger-soft:#F5E2DE;
+    --shadow: 0 1px 2px rgba(28,35,33,0.04), 0 8px 24px rgba(28,35,33,0.06);
+    --shadow-lg: 0 4px 8px rgba(28,35,33,0.06), 0 24px 48px rgba(28,35,33,0.14);
+    --radius: 10px;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif; font-size:14px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+  .display{ font-family:'Fraunces', serif; }
+  button{ font-family:inherit; cursor:pointer; }
+  a{ color:inherit; }
+
+  /* ===== APP SHELL ===== */
+  .app{ display:grid; grid-template-columns:232px 1fr; grid-template-rows:56px 1fr; height:100vh; }
+  .topbar{
+    grid-column:1/3; grid-row:1; display:flex; align-items:center; gap:16px;
+    padding:0 20px; background:var(--surface); border-bottom:1px solid var(--line);
+    position:relative; z-index:5;
+  }
+  .brand{ display:flex; align-items:center; gap:8px; font-family:'Fraunces',serif; font-weight:600; font-size:17px; letter-spacing:.2px; padding-right:14px; border-right:1px solid var(--line); }
+  .brand-mark{ width:20px; height:20px; border-radius:5px; background:linear-gradient(135deg,var(--teal),#1c433d); flex:none; }
+  .search{
+    flex:1; max-width:380px; display:flex; align-items:center; gap:8px; background:var(--paper);
+    border:1px solid var(--line); border-radius:8px; padding:7px 10px; color:var(--ink-faint); font-size:13px;
+  }
+  .search svg{ flex:none; opacity:.6; }
+  .topbar-right{ margin-left:auto; display:flex; align-items:center; gap:18px; }
+  .sync-pill{
+    display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--ink-soft);
+    padding:5px 10px; border-radius:20px; background:var(--success-soft);
+  }
+  .sync-dot{ width:6px; height:6px; border-radius:50%; background:var(--success); flex:none; }
+  .sync-dot.pulse{ animation:pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
+  .avatar{ width:30px; height:30px; border-radius:50%; background:var(--teal); color:#fff; display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:600; flex:none; }
+
+  .sidebar{
+    grid-column:1; grid-row:2; background:var(--surface); border-right:1px solid var(--line);
+    padding:16px 10px; overflow-y:auto;
+  }
+  .nav-group{ margin-bottom:6px; }
+  .nav-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint); font-weight:600; padding:14px 10px 6px; }
+  .nav-item{
+    display:flex; align-items:center; gap:10px; width:100%; border:none; background:none;
+    padding:8px 10px; border-radius:8px; font-size:13.5px; color:var(--ink-soft); font-weight:500;
+    text-align:left; position:relative;
+  }
+  .nav-item svg{ flex:none; opacity:.75; }
+  .nav-item:hover{ background:var(--paper); color:var(--ink); }
+  .nav-item.active{ background:var(--teal-soft); color:var(--teal); }
+  .nav-item.active svg{ opacity:1; }
+  .nav-badge{ margin-left:auto; font-size:11px; background:var(--danger); color:#fff; border-radius:20px; padding:1px 6px; font-weight:600; }
+  .nav-badge.neutral{ background:var(--line); color:var(--ink-soft); }
+
+  .main{ grid-column:2; grid-row:2; overflow-y:auto; padding:28px 32px 60px; position:relative; }
+  .view{ display:none; max-width:1200px; }
+  .view.active{ display:block; animation:fade .18s ease; }
+  @keyframes fade{ from{ opacity:0; transform:translateY(4px);} to{ opacity:1; transform:none;} }
+
+  .page-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:22px; }
+  .page-title{ font-family:'Fraunces',serif; font-size:24px; font-weight:600; margin:0; }
+  .page-sub{ color:var(--ink-soft); font-size:13px; margin-top:3px; }
+  .btn{ border:none; border-radius:8px; padding:8px 14px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px; }
+  .btn-primary{ background:var(--ink); color:#fff; }
+  .btn-primary:hover{ background:#000; }
+  .btn-ghost{ background:var(--surface); border:1px solid var(--line); color:var(--ink); }
+  .btn-ghost:hover{ background:var(--paper); }
+
+  /* linked chip — the signature element */
+  .chip-link{
+    background:none; border:none; padding:0; color:var(--teal); font-weight:600; font-size:inherit;
+    display:inline-flex; align-items:center; gap:4px; border-bottom:1px dashed rgba(44,95,88,.4);
+  }
+  .chip-link:hover{ color:var(--clay); border-bottom-color:rgba(185,121,63,.55); }
+  .chip-link svg{ opacity:.55; }
+
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); }
+
+  /* ===== DASHBOARD ===== */
+  .greeting{ margin-bottom:22px; }
+  .greeting h1{ font-family:'Fraunces',serif; font-size:26px; font-weight:600; margin:0 0 4px; }
+  .greeting .date{ color:var(--ink-soft); font-size:13px; }
+  .quick-actions{ display:flex; gap:8px; margin-top:14px; }
+
+  .kpi-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px; }
+  .kpi{ padding:16px 18px; }
+  .kpi-label{ font-size:12px; color:var(--ink-soft); font-weight:500; }
+  .kpi-value{ font-family:'Fraunces',serif; font-size:30px; font-weight:600; margin-top:4px; }
+  .kpi-value.mono-num{ font-family:'JetBrains Mono',monospace; }
+
+  .attention{ margin-bottom:22px; }
+  .attention-head{ display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .attention-head h2{ font-size:15px; font-weight:600; margin:0; }
+  .attn-item{
+    display:flex; align-items:center; gap:12px; padding:13px 16px; border:none; width:100%; text-align:left;
+    background:var(--surface); border-bottom:1px solid var(--line-soft);
+  }
+  .attn-item:first-child{ border-radius:var(--radius) var(--radius) 0 0; }
+  .attn-item:last-child{ border-bottom:none; border-radius:0 0 var(--radius) var(--radius); }
+  .attn-item:hover{ background:var(--paper); }
+  .dot{ width:8px; height:8px; border-radius:50%; flex:none; }
+  .dot.red{ background:var(--danger); } .dot.amber{ background:var(--warning); }
+  .attn-text{ flex:1; font-size:13.5px; }
+  .attn-text b{ font-weight:600; }
+  .attn-arrow{ color:var(--ink-faint); }
+
+  .dash-grid{ display:grid; grid-template-columns:1.4fr 1fr; gap:16px; }
+  .mini-head{ font-size:13.5px; font-weight:600; padding:14px 16px 8px; }
+  .mini-row{ display:flex; justify-content:space-between; align-items:center; padding:10px 16px; border-top:1px solid var(--line-soft); font-size:13px; }
+
+  /* ===== CALENDAR ===== */
+  .cal-toolbar{ display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+  .cal-toolbar .range{ font-weight:600; font-size:14.5px; }
+  .nav-arrows button{ border:1px solid var(--line); background:var(--surface); border-radius:6px; width:28px; height:28px; }
+  .view-toggle{ margin-left:auto; display:flex; background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:3px; gap:2px; }
+  .view-toggle button{ border:none; background:none; padding:6px 12px; border-radius:6px; font-size:12.5px; font-weight:600; color:var(--ink-soft); }
+  .view-toggle button.active{ background:var(--surface); color:var(--ink); box-shadow:var(--shadow); }
+
+  .cal-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); }
+  .cal-grid{ display:grid; grid-template-columns:150px repeat(27, 42px); min-width:1300px; }
+  .cal-corner{ position:sticky; left:0; background:var(--surface); z-index:3; border-bottom:1px solid var(--line); border-right:1px solid var(--line); }
+  .cal-day-head{ text-align:center; font-size:11px; color:var(--ink-soft); padding:8px 0 6px; border-bottom:1px solid var(--line); border-right:1px solid var(--line-soft); position:relative; }
+  .cal-day-head.today{ background:var(--teal-soft); color:var(--teal); font-weight:700; }
+  .cal-day-head .dow{ display:block; font-size:9.5px; color:var(--ink-faint); text-transform:uppercase; }
+  .cal-row-label{
+    position:sticky; left:0; background:var(--surface); z-index:2; padding:12px 14px; border-right:1px solid var(--line);
+    border-bottom:1px solid var(--line-soft); font-size:13px; font-weight:600; display:flex; align-items:center;
+  }
+  .cal-track{ position:relative; border-bottom:1px solid var(--line-soft); grid-column:2/29; display:grid; grid-template-columns:repeat(27,42px); min-height:52px; }
+  .cal-cell{ border-right:1px solid var(--line-soft); }
+  .cal-bar{
+    grid-row:1; margin:9px 3px; border-radius:7px; padding:6px 10px; color:#fff; font-size:12px; font-weight:600;
+    display:flex; align-items:center; overflow:hidden; white-space:nowrap; border:none; text-align:left;
+  }
+  .cal-bar:hover{ filter:brightness(1.08); transform:translateY(-1px); }
+  .cal-bar .ch{ font-weight:400; opacity:.85; margin-left:6px; font-size:11px; }
+  .cal-legend{ display:flex; gap:16px; margin-top:12px; font-size:12px; color:var(--ink-soft); }
+  .cal-legend span{ display:inline-flex; align-items:center; gap:6px; }
+  .legend-dot{ width:9px; height:9px; border-radius:3px; }
+
+  /* ===== TABLES ===== */
+  table{ width:100%; border-collapse:collapse; }
+  thead th{ text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); font-weight:600; padding:10px 16px; border-bottom:1px solid var(--line); }
+  tbody td{ padding:13px 16px; border-bottom:1px solid var(--line-soft); font-size:13.5px; vertical-align:middle; }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr:hover{ background:var(--paper); }
+  .pill{ display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:20px; font-size:11.5px; font-weight:600; }
+  .pill-confirmed{ background:var(--success-soft); color:var(--success); }
+  .pill-pending{ background:var(--warning-soft); color:var(--warning); }
+  .pill-cancelled{ background:var(--line-soft); color:var(--ink-soft); }
+  .pill-vip{ background:var(--clay-soft); color:var(--clay); }
+  .guest-cell{ display:flex; align-items:center; gap:9px; }
+  .guest-dot{ width:26px; height:26px; border-radius:50%; background:var(--teal-soft); color:var(--teal); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex:none; }
+
+  /* ===== LISTINGS GRID ===== */
+  .listing-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .listing-card{ overflow:hidden; }
+  .listing-photo{ height:110px; background:linear-gradient(135deg,var(--teal-soft),var(--paper)); display:flex; align-items:center; justify-content:center; color:var(--teal); opacity:.5; }
+  .listing-body{ padding:14px 16px; }
+  .listing-name{ font-weight:600; font-size:14.5px; margin-bottom:2px; }
+  .listing-meta{ font-size:12px; color:var(--ink-soft); margin-bottom:10px; }
+  .listing-stats{ display:flex; justify-content:space-between; font-size:12px; border-top:1px solid var(--line-soft); padding-top:10px; }
+  .listing-stats b{ font-family:'JetBrains Mono',monospace; font-weight:500; }
+
+  /* ===== INBOX ===== */
+  .inbox-layout{ display:grid; grid-template-columns:300px 1fr; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); overflow:hidden; height:560px; }
+  .thread-list{ border-right:1px solid var(--line); overflow-y:auto; }
+  .thread-item{ display:block; width:100%; text-align:left; border:none; background:none; padding:13px 16px; border-bottom:1px solid var(--line-soft); }
+  .thread-item:hover, .thread-item.active{ background:var(--paper); }
+  .thread-item.active{ background:var(--teal-soft); }
+  .thread-top{ display:flex; justify-content:space-between; font-size:13px; font-weight:600; margin-bottom:3px; }
+  .thread-top .time{ font-weight:400; color:var(--ink-faint); font-size:11.5px; }
+  .thread-preview{ font-size:12.5px; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .unread-badge{ background:var(--danger); color:#fff; font-size:10.5px; border-radius:20px; padding:0px 6px; font-weight:700; }
+  .thread-view{ display:flex; flex-direction:column; }
+  .thread-header{ padding:14px 20px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px; }
+  .thread-messages{ flex:1; overflow-y:auto; padding:18px 20px; display:flex; flex-direction:column; gap:12px; }
+  .msg{ max-width:70%; padding:9px 13px; border-radius:12px; font-size:13px; }
+  .msg.guest{ background:var(--paper); align-self:flex-start; border-bottom-left-radius:3px; }
+  .msg.host{ background:var(--teal); color:#fff; align-self:flex-end; border-bottom-right-radius:3px; }
+  .composer{ border-top:1px solid var(--line); padding:12px 16px; display:flex; gap:8px; align-items:center; }
+  .composer input{ flex:1; border:1px solid var(--line); border-radius:8px; padding:9px 12px; font-size:13px; font-family:inherit; }
+  .suggest-btn{ background:var(--clay-soft); color:var(--clay); border:none; border-radius:8px; padding:8px 11px; font-size:12px; font-weight:600; }
+
+  /* ===== TASKS ===== */
+  .task-row{ display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid var(--line-soft); }
+  .task-row:last-child{ border-bottom:none; }
+  .task-check{ width:18px; height:18px; border-radius:5px; border:1.5px solid var(--line); flex:none; display:flex; align-items:center; justify-content:center; }
+  .task-check.done{ background:var(--success); border-color:var(--success); color:#fff; }
+  .task-title{ font-size:13.5px; font-weight:500; flex:1; }
+  .task-title.done{ text-decoration:line-through; color:var(--ink-faint); }
+  .task-meta{ font-size:12px; color:var(--ink-soft); }
+
+  /* ===== DRAWER ===== */
+  .backdrop{ position:fixed; inset:0; background:rgba(28,35,33,.28); opacity:0; pointer-events:none; transition:opacity .2s ease; z-index:20; }
+  .backdrop.show{ opacity:1; pointer-events:auto; }
+  .drawer{
+    position:fixed; top:0; right:0; height:100%; width:440px; background:var(--surface);
+    box-shadow:var(--shadow-lg); transform:translateX(100%); transition:transform .24s cubic-bezier(.2,.8,.3,1);
+    z-index:21; display:flex; flex-direction:column;
+  }
+  .drawer.show{ transform:translateX(0); }
+  .drawer-head{ padding:16px 20px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px; }
+  .drawer-back{ border:1px solid var(--line); background:var(--surface); border-radius:6px; width:26px; height:26px; display:flex; align-items:center; justify-content:center; flex:none; }
+  .drawer-close{ margin-left:auto; border:none; background:none; color:var(--ink-soft); width:26px; height:26px; }
+  .drawer-body{ flex:1; overflow-y:auto; padding:18px 20px 30px; }
+  .drawer-section{ margin-bottom:18px; }
+  .drawer-label{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); font-weight:600; margin-bottom:7px; }
+  .drawer-card{ background:var(--paper); border-radius:8px; padding:12px 14px; }
+
+  ::-webkit-scrollbar{ width:9px; height:9px; }
+  ::-webkit-scrollbar-thumb{ background:var(--line); border-radius:20px; }
+
+  /* ===== ROLE SWITCH ===== */
+  .role-switch{ display:flex; background:var(--paper); border:1px solid var(--line); border-radius:20px; padding:3px; gap:2px; }
+  .role-btn{ border:none; background:none; padding:6px 13px; border-radius:16px; font-size:12.5px; font-weight:600; color:var(--ink-soft); }
+  .role-btn.active{ background:var(--surface); color:var(--ink); box-shadow:var(--shadow); }
+  .role-select{ border:1px solid var(--line); background:var(--surface); border-radius:8px; padding:6px 10px; font-size:12.5px; font-family:inherit; color:var(--ink); }
+  .portal-banner{ display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--ink-soft); padding:5px 10px; border-radius:20px; background:var(--blue-soft); white-space:nowrap; }
+  .portal-dot{ width:6px; height:6px; border-radius:50%; background:var(--blue); flex:none; }
+  .brand-role-tag{ font-family:'Inter',sans-serif; font-weight:600; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); margin-left:8px; }
+
+  /* ===== OWNER MODE ===== */
+  body[data-role="owner"] .nav-item.active{ background:var(--blue-soft); color:var(--blue); }
+  body[data-role="owner"] .nav-item.active svg{ opacity:1; }
+  body[data-role="owner"] .chip-link{ color:var(--blue); border-bottom-color:rgba(61,110,166,.4); }
+  body[data-role="owner"] .chip-link:hover{ color:var(--clay); }
+  body[data-role="owner"] .avatar{ background:var(--blue); }
+  .readonly-note{ font-size:12px; color:var(--ink-faint); }
+  .property-readonly{ padding:14px 16px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line-soft); }
+  .property-readonly:last-child{ border-bottom:none; }
+
+  /* ===== CLIENT MODE (guest-facing, warm) ===== */
+  body[data-role="client"]{ background:var(--clay-soft); }
+  body[data-role="client"] .nav-item.active{ background:var(--clay-soft); color:var(--clay); }
+  body[data-role="client"] .nav-item.active svg{ opacity:1; }
+  body[data-role="client"] .chip-link{ color:var(--clay); border-bottom-color:rgba(185,121,63,.4); }
+  body[data-role="client"] .avatar{ background:var(--clay); }
+  .hero-stay{ background:linear-gradient(135deg,var(--clay),#8a5527); color:#fff; border-radius:16px; padding:28px 30px; margin-bottom:20px; }
+  .hero-stay .eyebrow{ font-size:11.5px; letter-spacing:.08em; opacity:.85; margin-bottom:8px; }
+  .hero-stay h1{ font-family:'Fraunces',serif; font-size:27px; margin:0 0 6px; }
+  .hero-stay .sub{ font-size:13.5px; opacity:.92; }
+  .stay-actions{ display:flex; gap:8px; margin-top:18px; }
+  .stay-actions .btn-ghost{ background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.32); color:#fff; }
+  .stay-actions .btn-ghost:hover{ background:rgba(255,255,255,.26); }
+  .code-card{ display:flex; justify-content:space-between; align-items:center; padding:16px 18px; }
+  .code-value{ font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:600; letter-spacing:.1em; }
+  .explore-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .explore-card .listing-photo{ background:linear-gradient(135deg,var(--clay-soft),var(--paper)); color:var(--clay); }
+  .price-tag{ font-family:'JetBrains Mono',monospace; font-weight:600; font-size:13px; }
+  .msg.them{ background:var(--paper); align-self:flex-start; border-bottom-left-radius:3px; }
+  .msg.mine{ background:var(--teal); color:#fff; align-self:flex-end; border-bottom-right-radius:3px; }
+  body[data-role="client"] .msg.mine{ background:var(--clay); }
+
+  /* ===== LISTING GALLERY (drawer) ===== */
+  .gallery-frame{ position:relative; height:180px; border-radius:10px; overflow:hidden; background:var(--paper); }
+  .gallery-img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .gallery-placeholder{ width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; }
+  .gallery-placeholder svg{ opacity:.5; }
+  .gallery-placeholder span{ font-size:12px; font-weight:600; color:var(--ink-soft); }
+  .gallery-arrow{ position:absolute; top:50%; transform:translateY(-50%); width:30px; height:30px; border-radius:50%; border:none; background:rgba(255,255,255,.9); box-shadow:var(--shadow); font-size:15px; font-weight:600; display:flex; align-items:center; justify-content:center; color:var(--ink); }
+  .gallery-arrow:hover{ background:#fff; }
+  .gallery-arrow.left{ left:8px; }
+  .gallery-arrow.right{ right:8px; }
+  .gallery-count{ position:absolute; bottom:8px; right:10px; background:rgba(28,35,33,.62); color:#fff; font-size:11px; padding:2px 8px; border-radius:20px; font-weight:600; }
+  .drawer-input{ width:100%; border:1px solid var(--line); border-radius:8px; padding:9px 10px; font-family:inherit; font-size:13px; color:var(--ink); background:var(--surface); }
+  .drawer-input:focus{ outline:none; border-color:var(--teal); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="brand"><span class="brand-mark"></span>Clariva<span class="brand-role-tag" id="brand-role-tag">Operator</span></div>
+    <div class="search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <span id="search-label">Search reservations, guests, listings…</span>
+    </div>
+    <div class="topbar-right">
+      <div class="role-switch" id="role-switch">
+        <button class="role-btn active" data-role="agent">Agent</button>
+        <button class="role-btn" data-role="owner">Owner</button>
+        <button class="role-btn" data-role="client">Client</button>
+      </div>
+      <select class="role-select" id="role-person-select" style="display:none;"></select>
+      <div class="sync-pill" id="context-pill"><span class="sync-dot pulse"></span>All channels synced · 2m ago</div>
+      <div class="avatar" id="avatar">SA</div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar"></div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- DASHBOARD -->
+    <div class="view active" id="view-dashboard">
+      <div class="greeting">
+        <h1>Good morning, Sam 👋</h1>
+        <div class="date">Today · Thursday, Aug 20</div>
+        <div class="quick-actions">
+          <button class="btn btn-primary" onclick="openListingEditor()">+ Add listing</button>
+          <button class="btn btn-ghost" onclick="go('reservations')">+ Reservation</button>
+          <button class="btn btn-ghost" onclick="go('inbox')">Message guest</button>
+        </div>
+      </div>
+
+      <div class="kpi-row">
+        <div class="card kpi"><div class="kpi-label">Occupancy</div><div class="kpi-value">72%</div></div>
+        <div class="card kpi"><div class="kpi-label">Arrivals today</div><div class="kpi-value mono-num">8</div></div>
+        <div class="card kpi"><div class="kpi-label">Departures today</div><div class="kpi-value mono-num">6</div></div>
+        <div class="card kpi"><div class="kpi-label">Unread messages</div><div class="kpi-value mono-num">12</div></div>
+      </div>
+
+      <div class="attention">
+        <div class="attention-head"><h2>Needs your attention</h2></div>
+        <div class="card">
+          <button class="attn-item" onclick="go('tasks')">
+            <span class="dot red"></span>
+            <span class="attn-text"><b>3 overdue cleaning tasks</b> — across Villa Lagos, Downtown Loft, Apartment 4</span>
+            <span class="attn-arrow">→</span>
+          </button>
+          <button class="attn-item" onclick="go('inbox')">
+            <span class="dot amber"></span>
+            <span class="attn-text"><b>2 guests awaiting a response</b> — Amara Obi, Elena Petrova</span>
+            <span class="attn-arrow">→</span>
+          </button>
+          <button class="attn-item" onclick="go('listings')">
+            <span class="dot red"></span>
+            <span class="attn-text"><b>1 channel sync error</b> — Beach House · Airbnb</span>
+            <span class="attn-arrow">→</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="dash-grid">
+        <div class="card">
+          <div class="mini-head">Arriving today</div>
+          <div class="mini-row"><span>RES-10488 · <button class="chip-link" onclick="openGuest('G2')">Michael Chen</button></span><span class="mono">Downtown Loft</span></div>
+          <div class="mini-row"><span>RES-10491 · <button class="chip-link" onclick="openGuest('G4')">Tom Becker</button></span><span class="mono">Garden Cottage</span></div>
+        </div>
+        <div class="card">
+          <div class="mini-head">Channel health</div>
+          <div class="mini-row"><span>Airbnb</span><span class="pill pill-confirmed">✓ Synced</span></div>
+          <div class="mini-row"><span>Booking.com</span><span class="pill pill-confirmed">✓ Synced</span></div>
+          <div class="mini-row"><span>Direct</span><span class="pill pill-cancelled">— n/a</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div class="view" id="view-calendar">
+      <div class="page-head">
+        <div><h1 class="page-title">Calendar</h1><div class="page-sub">Every booking bar is the same reservation you'll see in Reservations, Inbox and Financials.</div></div>
+      </div>
+      <div class="cal-toolbar">
+        <div class="nav-arrows"><button>←</button></div>
+        <div class="range">Aug 20 — Sep 15</div>
+        <div class="nav-arrows"><button>→</button></div>
+        <div class="view-toggle">
+          <button class="active">Calendar</button><button>List</button><button>Pricing</button>
+        </div>
+      </div>
+      <div class="cal-wrap"><div class="cal-grid" id="cal-grid"></div></div>
+      <div class="cal-legend">
+        <span><span class="legend-dot" style="background:#2C5F58"></span>Booking.com</span>
+        <span><span class="legend-dot" style="background:#B9793F"></span>Airbnb</span>
+        <span><span class="legend-dot" style="background:#3D6EA6"></span>Direct</span>
+      </div>
+    </div>
+
+    <!-- RESERVATIONS -->
+    <div class="view" id="view-reservations">
+      <div class="page-head">
+        <div><h1 class="page-title">Reservations</h1><div class="page-sub">Every row opens the same hub you'd reach from the Calendar.</div></div>
+        <button class="btn btn-ghost">Filter</button>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Reservation</th><th>Guest</th><th>Property</th><th>Dates</th><th>Channel</th><th>Status</th><th>Payment</th></tr></thead>
+          <tbody id="res-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LISTINGS -->
+    <div class="view" id="view-listings">
+      <div class="page-head">
+        <div><h1 class="page-title">Listings</h1><div class="page-sub">Read-only catalogue from your owners — plus any you post yourself for owners who aren't on the platform.</div></div>
+        <button class="btn btn-primary" onclick="openListingEditor()">+ Add listing</button>
+      </div>
+      <div class="listing-grid" id="listing-grid"></div>
+    </div>
+
+    <!-- INBOX -->
+    <div class="view" id="view-inbox">
+      <div class="page-head"><div><h1 class="page-title">Inbox</h1><div class="page-sub">Opening a guest name never leaves the conversation.</div></div></div>
+      <div class="inbox-layout">
+        <div class="thread-list" id="thread-list"></div>
+        <div class="thread-view" id="thread-view"></div>
+      </div>
+    </div>
+
+    <!-- GUESTS -->
+    <div class="view" id="view-guests">
+      <div class="page-head"><div><h1 class="page-title">Guests</h1><div class="page-sub">The identity layer — every guest name across the app leads back here.</div></div></div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Guest</th><th>Status</th><th>Stays</th><th>Current reservation</th><th>Contact</th></tr></thead>
+          <tbody id="guest-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TASKS -->
+    <div class="view" id="view-tasks">
+      <div class="page-head"><div><h1 class="page-title">Tasks</h1><div class="page-sub">Operational work generated from reservations.</div></div></div>
+      <div class="card" id="task-list"></div>
+    </div>
+
+    <!-- STUB -->
+    <div class="view" id="view-stub">
+      <div class="page-head"><div><h1 class="page-title">Not in Phase 1</h1><div class="page-sub">Channels, Pricing, Financials, Reports, Automations and Settings come after the core loop is solid.</div></div></div>
+      <div class="card" style="padding:40px; text-align:center; color:var(--ink-faint);">This module is deliberately stubbed for the prototype.</div>
+    </div>
+
+    <!-- OWNER: DASHBOARD -->
+    <div class="view" id="view-owner-dashboard"></div>
+
+    <!-- OWNER: LISTINGS -->
+    <div class="view" id="view-owner-listings"></div>
+
+    <!-- OWNER: CALENDAR -->
+    <div class="view" id="view-owner-calendar">
+      <div class="page-head">
+        <div><h1 class="page-title">Calendar</h1><div class="page-sub">Bookings across your properties — the same calendar your agent works from.</div></div>
+      </div>
+      <div class="cal-wrap"><div class="cal-grid" id="owner-cal-grid"></div></div>
+      <div class="cal-legend">
+        <span><span class="legend-dot" style="background:#2C5F58"></span>Booking.com</span>
+        <span><span class="legend-dot" style="background:#B9793F"></span>Airbnb</span>
+        <span><span class="legend-dot" style="background:#3D6EA6"></span>Direct</span>
+      </div>
+    </div>
+
+    <!-- OWNER: FINANCIALS -->
+    <div class="view" id="view-owner-financials"></div>
+
+    <!-- OWNER: REPORTS -->
+    <div class="view" id="view-owner-reports"></div>
+
+    <!-- OWNER: NOTICES -->
+    <div class="view" id="view-owner-notices"></div>
+
+    <!-- OWNER: AGENT HUB -->
+    <div class="view" id="view-owner-agent-hub"></div>
+
+    <!-- AGENT: NOTICES (from owners) -->
+    <div class="view" id="view-agent-notices"></div>
+
+    <!-- AGENT: OWNER HUB -->
+    <div class="view" id="view-agent-owner-hub"></div>
+
+    <!-- CLIENT: MY BOOKING -->
+    <div class="view" id="view-client-booking"></div>
+
+    <!-- CLIENT: CALENDAR -->
+    <div class="view" id="view-client-calendar">
+      <div class="page-head">
+        <div><h1 class="page-title">Calendar</h1><div class="page-sub">Availability across stays — your own booking is highlighted.</div></div>
+      </div>
+      <div class="cal-wrap"><div class="cal-grid" id="client-cal-grid"></div></div>
+      <div class="cal-legend">
+        <span><span class="legend-dot" style="background:var(--clay)"></span>Your stay</span>
+        <span><span class="legend-dot" style="background:var(--ink-faint)"></span>Booked by others</span>
+      </div>
+    </div>
+
+    <!-- CLIENT: MESSAGES -->
+    <div class="view" id="view-client-messages"></div>
+
+    <!-- CLIENT: EXPLORE -->
+    <div class="view" id="view-client-explore"></div>
+
+  </div>
+</div>
+
+<!-- DRAWER -->
+<div class="backdrop" id="backdrop" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <button class="drawer-back" id="drawer-back" onclick="drawerBack()" style="display:none">←</button>
+    <div id="drawer-title" style="font-weight:600; font-size:14.5px;"></div>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</div>
+
+<script>
+/* ---------- ICONS ---------- */
+const ICONS = {
+  home:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+  msg:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  cal:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+  book:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+  home2:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',
+  user:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>',
+  check:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>',
+  layers:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 2 9 5-9 5-9-5z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/></svg>',
+  tag:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.6 12.6 12 21.2 2.8 12 4 4l8-1.2z"/><circle cx="8.5" cy="8.5" r="1.2"/></svg>',
+  dollar:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+  chart:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg>',
+  zap:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h8l-1 8 10-12h-8z"/></svg>',
+  gear:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+  link:'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.5-1.5"/></svg>'
+};
+/* ---------- DATA MODEL ----------
+   The whole point of the prototype: every screen renders views over the
+   SAME objects. Nothing below is screen-specific data — it's one store. */
+const LISTINGS = [
+  {id:'L1', name:'Villa Lagos', type:'Villa · 4bd', occ:'81%', ownerId:'O1', agentId:'A1', rate:220, photos:[{type:'placeholder',label:'Exterior'},{type:'placeholder',label:'Living room'},{type:'placeholder',label:'Master bedroom'}]},
+  {id:'L2', name:'Apartment 4', type:'Apartment · 1bd', occ:'64%', ownerId:'O2', agentId:'A2', rate:95, photos:[{type:'placeholder',label:'Living room'},{type:'placeholder',label:'Kitchen'}]},
+  {id:'L3', name:'Beach House', type:'House · 3bd', occ:'70%', ownerId:'O3', agentId:'A1', rate:180, photos:[{type:'placeholder',label:'Exterior'},{type:'placeholder',label:'Beachfront view'},{type:'placeholder',label:'Bedroom'},{type:'placeholder',label:'Patio'}]},
+  {id:'L4', name:'Downtown Loft', type:'Loft · 2bd', occ:'75%', ownerId:'O1', agentId:'A2', rate:130, photos:[{type:'placeholder',label:'Living room'},{type:'placeholder',label:'City view'}]},
+  {id:'L5', name:'Garden Cottage', type:'Cottage · 2bd', occ:'58%', ownerId:'O3', agentId:'A1', rate:110, photos:[{type:'placeholder',label:'Garden'},{type:'placeholder',label:'Bedroom'}]},
+];
+const OWNERS = [
+  {id:'O1', name:'Adaeze Nwosu'},
+  {id:'O2', name:'Chuka Eze'},
+  {id:'O3', name:'Ngozi Bello'},
+];
+const AGENTS = [
+  {id:'A1', name:'Sam Adeyemi', role:'Lead Agent'},
+  {id:'A2', name:'Tolu Bankole', role:'Field Agent'},
+];
+const NOTICES = [
+  {id:'N1', ownerId:'O1', agentId:'A1', date:'2026-09-14', text:'Please confirm the AC at Villa Lagos was serviced before the next guest arrives.'},
+  {id:'N2', ownerId:'O1', agentId:'A2', date:'2026-09-10', text:'Payout schedule is moving from monthly to bi-weekly starting next month.'},
+  {id:'N3', ownerId:'O3', agentId:'A1', date:'2026-09-08', text:'Great work on the last two Beach House reviews — thank you!'},
+];
+const GUESTS = [
+  {id:'G1', name:'Sarah Johnson', vip:true, stays:8, notes:'Prefers late check-in. Allergic to feather pillows.', contact:'sarah.j@mail.com · +1 202 555 0148'},
+  {id:'G2', name:'Michael Chen', vip:false, stays:2, notes:'First-time guest, asked good local coffee spots.', contact:'m.chen@mail.com · +1 415 555 0110'},
+  {id:'G3', name:'Amara Obi', vip:false, stays:1, notes:'—', contact:'amara.obi@mail.com · +234 803 555 0199'},
+  {id:'G4', name:'Tom Becker', vip:false, stays:4, notes:'Regular business traveller, quiet room requested.', contact:'tbecker@mail.com · +44 7700 900123'},
+  {id:'G5', name:'Elena Petrova', vip:false, stays:0, notes:'New guest — first booking with us.', contact:'elena.p@mail.com · +49 176 5550199'},
+  {id:'G6', name:'James Okafor', vip:false, stays:3, notes:'Books Beach House every summer.', contact:'j.okafor@mail.com · +234 701 555 0177'},
+];
+const CHANNEL_COLOR = {'Booking.com':'#2C5F58','Airbnb':'#B9793F','Direct':'#3D6EA6'};
+const RESERVATIONS = [
+  {id:'RES-10482', guest:'G1', listing:'L1', in:'2026-08-21', out:'2026-08-25', channel:'Booking.com', status:'confirmed', paid:1240, paidStatus:'Paid', request:'Late check-in requested (after 9pm).', tasks:[{t:'Pre-arrival inspection',done:true},{t:'Cleaning after checkout',done:false,overdue:true}]},
+  {id:'RES-10483', guest:'G2', listing:'L1', in:'2026-08-27', out:'2026-08-30', channel:'Direct', status:'confirmed', paid:860, paidStatus:'Paid', request:'—', tasks:[{t:'Welcome message',done:false}]},
+  {id:'RES-10484', guest:'G3', listing:'L2', in:'2026-08-22', out:'2026-08-30', channel:'Airbnb', status:'pending', paid:1510, paidStatus:'Awaiting payment', request:'Requested extra towels.', tasks:[{t:'Restock supplies',done:false,overdue:true}]},
+  {id:'RES-10485', guest:'G4', listing:'L2', in:'2026-09-02', out:'2026-09-05', channel:'Airbnb', status:'confirmed', paid:640, paidStatus:'Paid', request:'—', tasks:[]},
+  {id:'RES-10486', guest:'G5', listing:'L3', in:'2026-08-24', out:'2026-08-31', channel:'Direct', status:'confirmed', paid:2100, paidStatus:'Paid', request:'First stay — no notes yet.', tasks:[{t:'Send welcome guide',done:false}]},
+  {id:'RES-10487', guest:'G6', listing:'L3', in:'2026-09-03', out:'2026-09-08', channel:'Airbnb', status:'confirmed', paid:1780, paidStatus:'Paid', request:'Requests ground-floor room.', tasks:[]},
+  {id:'RES-10488', guest:'G2', listing:'L4', in:'2026-08-20', out:'2026-08-22', channel:'Booking.com', status:'confirmed', paid:410, paidStatus:'Paid', request:'—', tasks:[{t:'Cleaning after checkout',done:false,overdue:true}]},
+  {id:'RES-10489', guest:'G1', listing:'L4', in:'2026-09-05', out:'2026-09-09', channel:'Booking.com', status:'confirmed', paid:970, paidStatus:'Paid', request:'Late check-in requested (after 9pm).', tasks:[]},
+  {id:'RES-10490', guest:'G3', listing:'L5', in:'2026-09-10', out:'2026-09-14', channel:'Airbnb', status:'pending', paid:1180, paidStatus:'Awaiting payment', request:'—', tasks:[]},
+  {id:'RES-10491', guest:'G4', listing:'L5', in:'2026-08-29', out:'2026-09-01', channel:'Direct', status:'confirmed', paid:530, paidStatus:'Paid', request:'—', tasks:[]},
+];
+const INBOX_THREADS = [
+  {guest:'G1', unread:0, time:'2m ago', last:'Perfect, thank you so much!', awaiting:false},
+  {guest:'G3', unread:2, time:'34m ago', last:'Hi, just checking on the extra towels…', awaiting:true},
+  {guest:'G5', unread:1, time:'1h ago', last:'Excited for our first stay!', awaiting:true},
+  {guest:'G2', unread:0, time:'3h ago', last:'Got it, see you Thursday.', awaiting:false},
+  {guest:'G6', unread:0, time:'1d ago', last:'Same room as last year would be great.', awaiting:false},
+];
+const CAL_START = new Date(2026,7,20); // Aug 20 2026
+const CAL_DAYS = 27;
+function dayIndex(dateStr){
+  const d = new Date(dateStr+'T00:00:00');
+  return Math.round((d - CAL_START)/86400000);
+}
+function fmtDate(dateStr){
+  const d = new Date(dateStr+'T00:00:00');
+  return d.toLocaleDateString('en-US',{month:'short', day:'numeric'});
+}
+const guestById = id => GUESTS.find(g=>g.id===id);
+const listingById = id => LISTINGS.find(l=>l.id===id);
+const resById = id => RESERVATIONS.find(r=>r.id===id);
+const ownerById = id => OWNERS.find(o=>o.id===id);
+const agentById = id => AGENTS.find(a=>a.id===id);
+function ownerLabel(l){
+  if(l.ownerId){ const o = ownerById(l.ownerId); if(o) return o.name; }
+  return l.ownerName ? `${l.ownerName} (no Clariva account)` : 'No owner account — managed directly by agent';
+}
+
+/* ---------- NAV ---------- */
+function go(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  const btn = [...document.querySelectorAll('.nav-item')].find(b=>b.dataset.view===view);
+  if(btn) btn.classList.add('active');
+  closeDrawer();
+}
+
+/* ---------- ROLES ----------
+   Same data model, three lenses: Agent (operator, full access), Owner
+   (read-only, scoped to their own properties), Client (their own
+   booking only). Nothing here is a separate dataset — every role view
+   below just filters/aggregates LISTINGS, RESERVATIONS and GUESTS. */
+const NAV_CONFIG = {
+  agent: [
+    {label:'Core', items:[
+      {view:'dashboard', icon:'home', text:'Dashboard'},
+      {view:'inbox', icon:'msg', text:'Inbox', badge:12},
+      {view:'calendar', icon:'cal', text:'Calendar'},
+      {view:'reservations', icon:'book', text:'Reservations'},
+      {view:'listings', icon:'home2', text:'Listings'},
+      {view:'guests', icon:'user', text:'Guests'},
+      {view:'tasks', icon:'check', text:'Tasks', badge:3},
+    ]},
+    {label:'Owners', items:[
+      {view:'agent-notices', icon:'msg', text:'Notices'},
+      {view:'agent-owner-hub', icon:'user', text:'Owner Hub'},
+    ]},
+    {label:'Manage', items:[
+      {view:'stub', icon:'layers', text:'Channels'},
+      {view:'stub', icon:'tag', text:'Pricing'},
+      {view:'stub', icon:'dollar', text:'Financials'},
+    ]},
+    {label:'Insights', items:[{view:'stub', icon:'chart', text:'Reports'}]},
+    {label:'Automate', items:[{view:'stub', icon:'zap', text:'Automations'}]},
+    {label:'System', items:[{view:'stub', icon:'gear', text:'Settings'}]},
+  ],
+  owner: [
+    {label:'Your Portfolio', items:[
+      {view:'owner-dashboard', icon:'home', text:'Dashboard'},
+      {view:'owner-listings', icon:'home2', text:'Listings'},
+      {view:'owner-calendar', icon:'cal', text:'Calendar'},
+      {view:'owner-financials', icon:'dollar', text:'Financials'},
+      {view:'owner-reports', icon:'chart', text:'Reports'},
+    ]},
+    {label:'Team', items:[
+      {view:'owner-notices', icon:'msg', text:'Notices'},
+      {view:'owner-agent-hub', icon:'user', text:'Agent Hub'},
+    ]},
+  ],
+  client: [
+    {label:'Your Stay', items:[
+      {view:'client-booking', icon:'home', text:'My Booking'},
+      {view:'client-calendar', icon:'cal', text:'Calendar'},
+      {view:'client-messages', icon:'msg', text:'Messages'},
+      {view:'client-explore', icon:'home2', text:'Explore Stays'},
+    ]},
+  ],
+};
+const SEARCH_LABEL = {
+  agent:'Search reservations, guests, listings…',
+  owner:'Search your properties…',
+  client:'Search your booking…',
+};
+const BRAND_TAG = { agent:'Operator', owner:'Owner Portal', client:'Guest' };
+
+let CURRENT_ROLE = 'agent';
+let CURRENT_OWNER = 'O1';
+let CURRENT_GUEST_CLIENT = 'G1';
+let CURRENT_AGENT = 'A1';
+
+function renderSidebar(role){
+  document.getElementById('sidebar').innerHTML = NAV_CONFIG[role].map(g=>`
+    <div class="nav-group">
+      <div class="nav-label">${g.label}</div>
+      ${g.items.map(it=>`<button class="nav-item" data-view="${it.view}">${ICONS[it.icon]}${it.text}${it.badge?`<span class="nav-badge">${it.badge}</span>`:''}</button>`).join('')}
+    </div>`).join('');
+  document.querySelectorAll('.nav-item').forEach(b=>{
+    b.addEventListener('click', ()=>go(b.dataset.view));
+  });
+}
+
+function renderPersonSelect(){
+  const sel = document.getElementById('role-person-select');
+  if(CURRENT_ROLE==='owner'){
+    sel.style.display = 'inline-block';
+    sel.innerHTML = OWNERS.map(o=>`<option value="${o.id}" ${o.id===CURRENT_OWNER?'selected':''}>Viewing as ${o.name}</option>`).join('');
+    sel.onchange = e=>{ CURRENT_OWNER = e.target.value; renderOwnerViews(); };
+  } else if(CURRENT_ROLE==='client'){
+    sel.style.display = 'inline-block';
+    sel.innerHTML = GUESTS.map(g=>`<option value="${g.id}" ${g.id===CURRENT_GUEST_CLIENT?'selected':''}>Viewing as ${g.name}</option>`).join('');
+    sel.onchange = e=>{ CURRENT_GUEST_CLIENT = e.target.value; renderClientViews(); };
+  } else if(CURRENT_ROLE==='agent'){
+    sel.style.display = 'inline-block';
+    sel.innerHTML = AGENTS.map(a=>`<option value="${a.id}" ${a.id===CURRENT_AGENT?'selected':''}>Viewing as ${a.name}</option>`).join('');
+    sel.onchange = e=>{ CURRENT_AGENT = e.target.value; renderAgentTeamViews(); };
+  } else {
+    sel.style.display = 'none';
+  }
+}
+
+function renderContextPill(){
+  const pill = document.getElementById('context-pill');
+  if(CURRENT_ROLE==='agent'){
+    pill.className = 'sync-pill';
+    pill.innerHTML = '<span class="sync-dot pulse"></span>All channels synced · 2m ago';
+    document.getElementById('avatar').textContent = 'SA';
+  } else if(CURRENT_ROLE==='owner'){
+    pill.className = 'portal-banner';
+    pill.innerHTML = '<span class="portal-dot"></span>Read-only owner portal';
+    const o = ownerById(CURRENT_OWNER);
+    document.getElementById('avatar').textContent = o.name.split(' ').map(w=>w[0]).join('');
+  } else {
+    pill.className = 'portal-banner';
+    pill.innerHTML = '<span class="portal-dot"></span>Guest view';
+    const g = guestById(CURRENT_GUEST_CLIENT);
+    document.getElementById('avatar').textContent = g.name.split(' ').map(w=>w[0]).join('');
+  }
+}
+
+function setRole(role){
+  CURRENT_ROLE = role;
+  document.body.dataset.role = role;
+  document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active', b.dataset.role===role));
+  document.getElementById('search-label').textContent = SEARCH_LABEL[role];
+  document.getElementById('brand-role-tag').textContent = BRAND_TAG[role];
+  renderSidebar(role);
+  renderPersonSelect();
+  renderContextPill();
+  if(role==='agent') renderAgentTeamViews();
+  if(role==='owner') renderOwnerViews();
+  if(role==='client') renderClientViews();
+  go(role==='agent' ? 'dashboard' : role==='owner' ? 'owner-dashboard' : 'client-booking');
+}
+document.querySelectorAll('.role-btn').forEach(b=>{
+  b.addEventListener('click', ()=>setRole(b.dataset.role));
+});
+
+/* ---------- CALENDAR (generic — reused across Agent/Owner/Client lenses) ---------- */
+function renderCalendarGrid(gridElId, listingsSubset, opts={}){
+  const mode = opts.mode || 'agent';
+  const grid = document.getElementById(gridElId);
+  if(!grid) return;
+  let html = `<div class="cal-corner"></div>`;
+  for(let i=0;i<CAL_DAYS;i++){
+    const d = new Date(CAL_START); d.setDate(d.getDate()+i);
+    const isToday = i===0;
+    html += `<div class="cal-day-head ${isToday?'today':''}"><span class="dow">${d.toLocaleDateString('en-US',{weekday:'narrow'})}</span>${d.getDate()}</div>`;
+  }
+  listingsSubset.forEach(listing=>{
+    html += `<div class="cal-row-label">${listing.name}</div>`;
+    html += `<div class="cal-track">`;
+    for(let i=0;i<CAL_DAYS;i++) html += `<div class="cal-cell"></div>`;
+    RESERVATIONS.filter(r=>r.listing===listing.id).forEach(r=>{
+      const s = dayIndex(r.in), e = dayIndex(r.out);
+      const startCol = Math.max(1,s+1), endCol = Math.min(CAL_DAYS+1, e+1);
+      if(endCol <= 1 || startCol > CAL_DAYS) return;
+      const isMine = mode==='client' && r.guest===CURRENT_GUEST_CLIENT;
+      const label = mode==='client' ? (isMine?'Your stay':'Booked') : guestById(r.guest).name;
+      const bg = mode==='client' ? (isMine ? 'var(--clay)' : 'var(--ink-faint)') : CHANNEL_COLOR[r.channel];
+      const clickable = mode==='agent';
+      html += `<button class="cal-bar" style="grid-column:${startCol}/${endCol}; background:${bg}; ${clickable?'':'cursor:default;'}" ${clickable?`onclick="openReservation('${r.id}')"`:''}>
+        ${label}${mode!=='client'?`<span class="ch">· ${r.channel}</span>`:''}
+      </button>`;
+    });
+    html += `</div>`;
+  });
+  grid.style.gridTemplateRows = `44px repeat(${listingsSubset.length}, 70px)`;
+  grid.innerHTML = html;
+}
+
+/* ---------- RELATIONSHIPS (which agents work for which owners) ---------- */
+function ownerListings(){ return LISTINGS.filter(l=>l.ownerId===CURRENT_OWNER); }
+function ownerReservations(){
+  const ids = ownerListings().map(l=>l.id);
+  return RESERVATIONS.filter(r=>ids.includes(r.listing));
+}
+function ownerAgents(){
+  const ids = [...new Set(ownerListings().map(l=>l.agentId))];
+  return ids.map(agentById);
+}
+function agentListings(){ return LISTINGS.filter(l=>l.agentId===CURRENT_AGENT); }
+function agentOwners(){
+  const ids = [...new Set(agentListings().map(l=>l.ownerId).filter(Boolean))];
+  return ids.map(ownerById);
+}
+function receivedNoticesForAgent(){
+  const ownerIds = new Set(agentListings().map(l=>l.ownerId));
+  return NOTICES.filter(n=> ownerIds.has(n.ownerId) && (n.agentId===CURRENT_AGENT || n.agentId==='all'));
+}
+
+/* ---------- RENDER: OWNER PORTAL (read-only + a couple of owner-only actions) ---------- */
+function renderOwnerViews(){
+  renderOwnerDashboard();
+  renderOwnerListings();
+  renderCalendarGrid('owner-cal-grid', ownerListings(), {mode:'owner'});
+  renderOwnerFinancials();
+  renderOwnerReports();
+  renderOwnerNotices();
+  renderOwnerAgentHub();
+}
+function renderOwnerDashboard(){
+  const owner = ownerById(CURRENT_OWNER);
+  const props = ownerListings();
+  const res = ownerReservations();
+  const avgOcc = Math.round(props.reduce((s,l)=>s+parseInt(l.occ),0)/props.length);
+  const paidTotal = res.filter(r=>r.paidStatus==='Paid').reduce((s,r)=>s+r.paid,0);
+  const pending = res.filter(r=>r.paidStatus!=='Paid').reduce((s,r)=>s+r.paid,0);
+  document.getElementById('view-owner-dashboard').innerHTML = `
+    <div class="greeting">
+      <h1>Good morning, ${owner.name.split(' ')[0]}</h1>
+      <div class="date">Here's how your portfolio is performing — statements are pulled straight from your agent's ledger.</div>
+    </div>
+    <div class="kpi-row">
+      <div class="card kpi"><div class="kpi-label">Your properties</div><div class="kpi-value mono-num">${props.length}</div></div>
+      <div class="card kpi"><div class="kpi-label">Avg. occupancy</div><div class="kpi-value">${avgOcc}%</div></div>
+      <div class="card kpi"><div class="kpi-label">Revenue collected</div><div class="kpi-value mono-num">$${paidTotal.toLocaleString()}</div></div>
+      <div class="card kpi"><div class="kpi-label">Pending payout</div><div class="kpi-value mono-num">$${pending.toLocaleString()}</div></div>
+    </div>
+    <div class="attention">
+      <div class="attention-head"><h2>Your properties</h2></div>
+      <div class="card">
+        ${props.map(l=>`<div class="property-readonly">
+          <div><div style="font-weight:600; font-size:13.5px;">${l.name}</div><div class="readonly-note">${l.type}</div></div>
+          <div style="text-align:right;"><div class="mono" style="font-weight:600;">${l.occ}</div><div class="readonly-note">occupancy</div></div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+}
+function renderOwnerListings(){
+  const props = ownerListings();
+  document.getElementById('view-owner-listings').innerHTML = `
+    <div class="page-head">
+      <div><h1 class="page-title">Listings</h1><div class="page-sub">Post your buildings and apartments, and set the nightly price. Your agents see this catalogue as read-only.</div></div>
+      <button class="btn btn-primary" onclick="openListingEditor()">+ Add listing</button>
+    </div>
+    <div class="listing-grid">
+      ${props.map(l=>`<div class="card listing-card">
+        <div class="listing-photo" onclick="openListing('${l.id}')" style="cursor:pointer;">${ICONS.home2}</div>
+        <div class="listing-body">
+          <button class="chip-link" style="font-size:14.5px; font-weight:600; margin-bottom:2px;" onclick="openListing('${l.id}')">${l.name}</button>
+          <div class="listing-meta">${l.type} · managed by ${agentById(l.agentId)?.name || '—'}</div>
+          <div class="listing-stats">
+            <span class="price-tag">$${l.rate}/night</span>
+            <button class="chip-link" onclick="openListingEditor('${l.id}')">${ICONS.link}Edit listing</button>
+          </div>
+        </div>
+      </div>`).join('')}
+    </div>`;
+}
+function renderOwnerFinancials(){
+  const res = ownerReservations().slice().sort((a,b)=>a.in.localeCompare(b.in));
+  document.getElementById('view-owner-financials').innerHTML = `
+    <div class="page-head"><div><h1 class="page-title">Financials</h1><div class="page-sub">Statements for your properties — the same reservation ledger your agent works from, filtered to you and locked to view-only.</div></div></div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Reservation</th><th>Property</th><th>Dates</th><th>Gross</th><th>Management fee (15%)</th><th>Net payout</th><th>Status</th></tr></thead>
+        <tbody>
+          ${res.map(r=>{
+            const l = listingById(r.listing);
+            const fee = Math.round(r.paid*0.15);
+            const net = r.paid-fee;
+            return `<tr>
+              <td class="mono">${r.id}</td>
+              <td>${l.name}</td>
+              <td>${fmtDate(r.in)} → ${fmtDate(r.out)}</td>
+              <td class="mono">$${r.paid.toLocaleString()}</td>
+              <td class="mono">$${fee.toLocaleString()}</td>
+              <td class="mono" style="font-weight:600;">$${net.toLocaleString()}</td>
+              <td><span class="pill ${r.paidStatus==='Paid'?'pill-confirmed':'pill-pending'}">${r.paidStatus}</span></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+function renderOwnerReports(){
+  const props = ownerListings();
+  document.getElementById('view-owner-reports').innerHTML = `
+    <div class="page-head"><div><h1 class="page-title">Reports</h1><div class="page-sub">Occupancy performance across your properties.</div></div></div>
+    <div class="card" style="padding:20px;">
+      ${props.map(l=>`<div style="margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;"><span style="font-weight:600;">${l.name}</span><span class="mono">${l.occ}</span></div>
+        <div style="background:var(--line-soft); border-radius:6px; height:8px;"><div style="width:${l.occ}; background:var(--blue); height:8px; border-radius:6px;"></div></div>
+      </div>`).join('')}
+    </div>`;
+}
+function renderOwnerNotices(){
+  const agents = ownerAgents();
+  const sent = NOTICES.filter(n=>n.ownerId===CURRENT_OWNER).slice().sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('view-owner-notices').innerHTML = `
+    <div class="page-head"><div><h1 class="page-title">Notices</h1><div class="page-sub">Send a note straight to the agents managing your properties.</div></div></div>
+    <div class="card" style="padding:16px 18px; margin-bottom:16px;">
+      <div class="drawer-label" style="margin-bottom:8px;">New notice</div>
+      <select class="role-select" id="notice-target" style="width:100%; margin-bottom:8px;">
+        <option value="all">All agents</option>
+        ${agents.map(a=>`<option value="${a.id}">${a.name}</option>`).join('')}
+      </select>
+      <textarea id="notice-text" placeholder="Write your notice…" style="width:100%; min-height:70px; border:1px solid var(--line); border-radius:8px; padding:10px; font-family:inherit; font-size:13px; margin-bottom:8px; resize:vertical;"></textarea>
+      <button class="btn btn-primary" onclick="sendOwnerNotice()">Send notice</button>
+    </div>
+    <div class="card">
+      ${sent.length ? sent.map(n=>`<div class="property-readonly" style="align-items:flex-start;">
+        <div><div style="font-weight:600; font-size:13px;">To ${n.agentId==='all'?'All agents':agentById(n.agentId).name}</div><div style="font-size:13px; margin-top:3px;">${n.text}</div></div>
+        <div class="readonly-note">${fmtDate(n.date)}</div>
+      </div>`).join('') : '<div style="padding:20px; text-align:center; color:var(--ink-faint);">No notices sent yet.</div>'}
+    </div>`;
+}
+function sendOwnerNotice(){
+  const target = document.getElementById('notice-target').value;
+  const text = document.getElementById('notice-text').value.trim();
+  if(!text) return;
+  NOTICES.push({id:'N'+(NOTICES.length+1), ownerId:CURRENT_OWNER, agentId:target, date:'2026-09-20', text});
+  renderOwnerNotices();
+}
+function renderOwnerAgentHub(){
+  const agents = ownerAgents();
+  const props = ownerListings();
+  document.getElementById('view-owner-agent-hub').innerHTML = `
+    <div class="page-head"><div><h1 class="page-title">Agent Hub</h1><div class="page-sub">The agents managing your properties — reach out if you need to pass along a message.</div></div></div>
+    <div class="card">
+      ${agents.map(a=>{
+        const managed = props.filter(l=>l.agentId===a.id).map(l=>l.name).join(', ');
+        return `<div class="property-readonly">
+          <div><div style="font-weight:600; font-size:13.5px;">${a.name}</div><div class="readonly-note">${a.role} · manages ${managed}</div></div>
+          <button class="btn btn-ghost" style="padding:6px 12px; font-size:12px;" onclick="prefillNoticeTo('${a.id}')">Message</button>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+function prefillNoticeTo(agentId){
+  go('owner-notices');
+  setTimeout(()=>{ const sel = document.getElementById('notice-target'); if(sel) sel.value = agentId; }, 0);
+}
+
+/* ---------- RENDER: AGENT — TEAM VIEWS (catalogue, notices, owner hub) ---------- */
+function renderAgentTeamViews(){
+  renderListings();
+  renderAgentNotices();
+  renderAgentOwnerHub();
+}
+function renderAgentNotices(){
+  const received = receivedNoticesForAgent().slice().sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('view-agent-notices').innerHTML = `
+    <div class="page-head"><div><h1 class="page-title">Notices</h1><div class="page-sub">Messages from the owners you manage properties for.</div></div></div>
+    <div class="card">
+      ${received.length ? received.map(n=>`<div class="property-readonly" style="align-items:flex-start;">
+        <div><div style="font-weight:600; font-size:13px;">${ownerById(n.ownerId).name}${n.agentId==='all'?' · to all agents':''}</div><div style="font-size:13px; margin-top:3px;">${n.text}</div></div>
+        <div class="readonly-note">${fmtDate(n.date)}</div>
+      </div>`).join('') : '<div style="padding:20px; text-align:center; color:var(--ink-faint);">No notices yet.</div>'}
+    </div>`;
+}
+function renderAgentOwnerHub(){
+  const owners = agentOwners();
+  document.getElementById('view-agent-owner-hub').innerHTML = `
+    <div class="page-head"><div><h1 class="page-title">Owner Hub</h1><div class="page-sub">The property owners you manage buildings for.</div></div></div>
+    <div class="card">
+      ${owners.map(o=>{
+        const managed = agentListings().filter(l=>l.ownerId===o.id).map(l=>l.name).join(', ');
+        return `<div class="property-readonly">
+          <div><div style="font-weight:600; font-size:13.5px;">${o.name}</div><div class="readonly-note">You manage ${managed}</div></div>
+          <button class="btn btn-ghost" style="padding:6px 12px; font-size:12px;" onclick="go('agent-notices')">View notices</button>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+/* ---------- RENDER: CLIENT / GUEST APP (their own booking only) ---------- */
+function currentClientReservation(){
+  const stays = RESERVATIONS.filter(r=>r.guest===CURRENT_GUEST_CLIENT);
+  return stays.find(r=> new Date(r.out+'T00:00:00') >= CAL_START) || stays[0];
+}
+function clientsAgent(){
+  const r = currentClientReservation();
+  if(!r) return null;
+  return agentById(listingById(r.listing).agentId);
+}
+function renderClientViews(){
+  renderClientBooking();
+  renderCalendarGrid('client-cal-grid', LISTINGS, {mode:'client'});
+  renderClientMessages();
+  renderClientExplore();
+}
+function renderClientBooking(){
+  const g = guestById(CURRENT_GUEST_CLIENT);
+  const r = currentClientReservation();
+  const el = document.getElementById('view-client-booking');
+  if(!r){ el.innerHTML = `<div class="card" style="padding:40px; text-align:center; color:var(--ink-faint);">No upcoming stay yet — browse Explore Stays to book one.</div>`; return; }
+  const l = listingById(r.listing);
+  el.innerHTML = `
+    <div class="hero-stay">
+      <div class="eyebrow">YOUR STAY</div>
+      <button class="chip-link" style="color:#fff; border-bottom-color:rgba(255,255,255,.5); font-size:27px; font-family:'Fraunces',serif; font-weight:600; padding:0;" onclick="openListing('${l.id}')">${l.name}</button>
+      <div class="sub">${fmtDate(r.in)} → ${fmtDate(r.out)} · ${dayIndex(r.out)-dayIndex(r.in)} nights</div>
+      <div class="stay-actions"><button class="btn btn-ghost" onclick="go('client-messages')">Message your agent</button></div>
+    </div>
+    <div class="dash-grid">
+      <div class="card code-card">
+        <div><div class="drawer-label" style="margin-bottom:6px;">Digital door code</div><div class="code-value">${(2000+parseInt(r.id.slice(-2))).toString().slice(0,4)}</div></div>
+        <div class="readonly-note">Active from check-in day</div>
+      </div>
+      <div class="card" style="padding:16px 18px;">
+        <div class="drawer-label" style="margin-bottom:6px;">Payment</div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span class="mono" style="font-size:16px; font-weight:600;">$${r.paid.toLocaleString()}</span>
+          <span class="pill ${r.paidStatus==='Paid'?'pill-confirmed':'pill-pending'}">${r.paidStatus}</span>
+        </div>
+      </div>
+    </div>
+    <div class="attention" style="margin-top:20px;">
+      <div class="attention-head"><h2>Your request</h2></div>
+      <div class="card" style="padding:16px 18px; font-size:13.5px;">${r.request!=='—'?r.request:'No special requests on file.'}</div>
+    </div>`;
+}
+function renderClientMessages(){
+  const g = guestById(CURRENT_GUEST_CLIENT);
+  const t = INBOX_THREADS.find(x=>x.guest===CURRENT_GUEST_CLIENT);
+  const agent = clientsAgent();
+  document.getElementById('view-client-messages').innerHTML = `
+    <div class="page-head"><div><h1 class="page-title">Messages</h1><div class="page-sub">${agent?`Your conversation with ${agent.name}, your agent`:'Your conversation with your agent'} — just your thread, not the owner or the shared inbox.</div></div></div>
+    <div class="card" style="height:480px; display:flex; flex-direction:column;">
+      <div class="thread-header"><span style="font-weight:600; font-size:14px;">${agent?agent.name:'Your agent'}</span></div>
+      <div class="thread-messages" style="flex:1;">
+        <div class="msg them">Hi! Just confirming check-in time for our stay.</div>
+        <div class="msg mine">Hi ${g.name.split(' ')[0]}, check-in opens at 3pm — I'll send the door code the morning of.</div>
+        <div class="msg them">${t?t.last:'Looking forward to it!'}</div>
+      </div>
+      <div class="composer">
+        <input type="text" placeholder="Write a message…">
+        <button class="btn btn-primary">Send</button>
+      </div>
+    </div>`;
+}
+function renderClientExplore(){
+  document.getElementById('view-client-explore').innerHTML = `
+    <div class="page-head"><div><h1 class="page-title">Explore stays</h1><div class="page-sub">Other places you might like to book next — tap a listing to see details.</div></div></div>
+    <div class="explore-grid">
+      ${LISTINGS.map(l=>`<div class="card listing-card explore-card" style="cursor:pointer;" onclick="openListing('${l.id}')">
+        <div class="listing-photo">${ICONS.home2}</div>
+        <div class="listing-body">
+          <div class="listing-name">${l.name}</div>
+          <div class="listing-meta">${l.type}</div>
+          <div class="listing-stats">
+            <span class="price-tag">$${l.rate}/night</span>
+            <button class="btn btn-ghost" style="padding:5px 10px; font-size:12px;" onclick="event.stopPropagation(); openListing('${l.id}')">View</button>
+          </div>
+        </div>
+      </div>`).join('')}
+    </div>`;
+}
+
+/* ---------- RENDER: CALENDAR ---------- */
+function renderCalendar(){
+  renderCalendarGrid('cal-grid', LISTINGS, {mode:'agent'});
+}
+
+/* ---------- RENDER: RESERVATIONS TABLE ---------- */
+function renderReservations(){
+  const body = document.getElementById('res-table-body');
+  body.innerHTML = RESERVATIONS.map(r=>{
+    const g = guestById(r.guest), l = listingById(r.listing);
+    return `<tr>
+      <td class="mono">${r.id}</td>
+      <td><button class="chip-link" onclick="openGuest('${g.id}')">${ICONS.link}${g.name}</button></td>
+      <td>${l.name}</td>
+      <td>${fmtDate(r.in)} → ${fmtDate(r.out)}</td>
+      <td>${r.channel}</td>
+      <td><span class="pill pill-${r.status}">${r.status==='confirmed'?'✓ Confirmed':r.status==='pending'?'Pending':'Cancelled'}</span></td>
+      <td><button class="chip-link" onclick="openReservation('${r.id}')">$${r.paid.toLocaleString()}</button></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---------- RENDER: LISTINGS (Agent's read-only view of the owners' catalogue) ---------- */
+function renderListings(){
+  const grid = document.getElementById('listing-grid');
+  grid.innerHTML = LISTINGS.map(l=>{
+    const count = RESERVATIONS.filter(r=>r.listing===l.id).length;
+    return `<div class="card listing-card">
+      <div class="listing-photo" onclick="openListing('${l.id}')" style="cursor:pointer;">${ICONS.home2}</div>
+      <div class="listing-body">
+        <button class="chip-link" style="font-size:14.5px; font-weight:600; margin-bottom:2px;" onclick="openListing('${l.id}')">${l.name}</button>
+        <div class="listing-meta">${l.type} · posted by ${ownerLabel(l)} · $${l.rate}/night</div>
+        <div class="listing-stats">
+          <span>Occupancy <b>${l.occ}</b></span>
+          ${(!l.ownerId && l.agentId===CURRENT_AGENT) ? `<button class="chip-link" onclick="openListingEditor('${l.id}')">${ICONS.link}Edit listing</button>` : `<button class="chip-link" onclick="go('calendar')">${count} bookings →</button>`}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- LISTING EDITOR (add or edit — used by both Owner and Agent) ----------
+   One shared form drives everything the Owner posts and everything an Agent
+   posts on behalf of an owner who isn't on the platform. Saving writes straight
+   back into LISTINGS, so Agent catalogues / Client Explore update immediately. */
+let editDraft = null;
+let editGalleryIndex = 0;
+function openListingEditor(existingId){
+  const src = existingId ? listingById(existingId) : null;
+  editDraft = src ? {
+    id: src.id, name: src.name, type: src.type, rate: src.rate, occ: src.occ,
+    photos: (src.photos || []).map(p => ({...p})),
+    ownerId: src.ownerId || null, ownerName: src.ownerName || '',
+    agentId: src.agentId,
+  } : {
+    id: 'L' + Date.now().toString(36),
+    name: '', type: '', rate: 100, occ: '0%', photos: [],
+    ownerId: CURRENT_ROLE==='owner' ? CURRENT_OWNER : null, ownerName: '',
+    agentId: CURRENT_ROLE==='agent' ? CURRENT_AGENT : (ownerAgents()[0]?.id || AGENTS[0].id),
+  };
+  editGalleryIndex = 0;
+  pushDrawer('listing-edit', editDraft.id);
+}
+function renderListingEditor(){
+  const d = editDraft;
+  const isNew = !LISTINGS.some(l=>l.id===d.id);
+  document.getElementById('drawer-title').textContent = isNew ? 'Add listing' : `Edit ${d.name || 'listing'}`;
+  const showOwnerField = CURRENT_ROLE==='agent';
+  document.getElementById('drawer-body').innerHTML = `
+    <div class="drawer-section">
+      <div class="drawer-label">Photos</div>
+      <div id="edit-gallery"></div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-label">Building / apartment name</div>
+      <input type="text" id="edit-name" class="drawer-input" placeholder="e.g. Villa Lagos" value="${d.name || ''}">
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-label">Type</div>
+      <input type="text" id="edit-type" class="drawer-input" placeholder="e.g. Apartment · 2bd" value="${d.type || ''}">
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-label">Nightly rate ($)</div>
+      <input type="number" id="edit-rate" class="drawer-input" min="1" value="${d.rate || 100}">
+    </div>
+    ${showOwnerField ? `
+    <div class="drawer-section">
+      <div class="drawer-label">Owner</div>
+      <input type="text" id="edit-owner" class="drawer-input" placeholder="Owner's name — leave blank if they don't use Clariva" value="${d.ownerId ? (ownerById(d.ownerId)?.name || '') : (d.ownerName || '')}">
+      <div class="readonly-note" style="margin-top:4px;">Matches an existing owner's name → links to their account. Otherwise it's saved as unlisted, and you manage it directly.</div>
+    </div>` : ''}
+    <div class="drawer-section">
+      <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="saveListingEditor()">${isNew ? 'Add listing' : 'Save changes'}</button>
+    </div>`;
+  renderEditGallery();
+}
+function renderEditGallery(){
+  const d = editDraft;
+  const photos = d.photos.length ? d.photos : [{type:'placeholder', label:'No photos yet'}];
+  editGalleryIndex = ((editGalleryIndex % photos.length) + photos.length) % photos.length;
+  const p = photos[editGalleryIndex];
+  const slide = p.type==='image'
+    ? `<img src="${p.src}" alt="${d.name}" class="gallery-img">`
+    : `<div class="gallery-placeholder" style="background:linear-gradient(135deg, ${PHOTO_TINTS[editGalleryIndex % PHOTO_TINTS.length]}, var(--paper));">${ICONS.home2}<span>${p.label || 'Photo'}</span></div>`;
+  document.getElementById('edit-gallery').innerHTML = `
+    <div class="gallery-frame">
+      ${slide}
+      ${photos.length>1 ? `
+        <button class="gallery-arrow left" type="button" onclick="editGalleryShift(-1)">‹</button>
+        <button class="gallery-arrow right" type="button" onclick="editGalleryShift(1)">›</button>` : ''}
+      <div class="gallery-count">${editGalleryIndex+1} / ${photos.length}</div>
+    </div>
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <input type="file" accept="image/*" id="edit-photo-upload" style="display:none" onchange="handleEditPhotoUpload(event)">
+      <button class="btn btn-ghost" style="flex:1; justify-content:center;" type="button" onclick="document.getElementById('edit-photo-upload').click()">+ Add photo</button>
+      ${d.photos.length ? `<button class="btn btn-ghost" style="justify-content:center;" type="button" onclick="removeEditPhoto()">Remove this photo</button>` : ''}
+    </div>`;
+}
+function editGalleryShift(dir){
+  editGalleryIndex += dir;
+  renderEditGallery();
+}
+function handleEditPhotoUpload(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    editDraft.photos.push({type:'image', src:e.target.result});
+    editGalleryIndex = editDraft.photos.length-1;
+    renderEditGallery();
+  };
+  reader.readAsDataURL(file);
+}
+function removeEditPhoto(){
+  if(!editDraft.photos.length) return;
+  editDraft.photos.splice(editGalleryIndex, 1);
+  editGalleryIndex = Math.max(0, editGalleryIndex-1);
+  renderEditGallery();
+}
+function saveListingEditor(){
+  const name = document.getElementById('edit-name').value.trim();
+  if(!name){ alert('Please enter a name for the listing.'); return; }
+  editDraft.name = name;
+  editDraft.type = document.getElementById('edit-type').value.trim() || 'Property';
+  editDraft.rate = parseInt(document.getElementById('edit-rate').value) || 100;
+  if(CURRENT_ROLE==='agent'){
+    const ownerInput = (document.getElementById('edit-owner')?.value || '').trim();
+    const matched = ownerInput ? OWNERS.find(o=>o.name.toLowerCase()===ownerInput.toLowerCase()) : null;
+    editDraft.ownerId = matched ? matched.id : null;
+    editDraft.ownerName = matched ? '' : (ownerInput || '');
+  }
+  const existing = LISTINGS.find(l=>l.id===editDraft.id);
+  if(existing){
+    Object.assign(existing, editDraft);
+  } else {
+    LISTINGS.push({...editDraft});
+  }
+  closeDrawer();
+  if(CURRENT_ROLE==='owner') renderOwnerListings();
+  if(CURRENT_ROLE==='agent') renderListings();
+  renderClientExplore();
+}
+
+/* ---------- RENDER: INBOX ---------- */
+let activeThreadGuest = 'G1';
+function renderInbox(){
+  const list = document.getElementById('thread-list');
+  list.innerHTML = INBOX_THREADS.map(t=>{
+    const g = guestById(t.guest);
+    return `<button class="thread-item ${t.guest===activeThreadGuest?'active':''}" onclick="selectThread('${t.guest}')">
+      <div class="thread-top"><span>${g.name}${g.vip?' · VIP':''}</span><span class="time">${t.time}</span></div>
+      <div class="thread-preview">${t.last}</div>
+      ${t.unread>0?`<span class="unread-badge">${t.unread}</span>`:''}
+    </button>`;
+  }).join('');
+  renderThreadView();
+}
+function selectThread(guestId){ activeThreadGuest = guestId; renderInbox(); }
+function renderThreadView(){
+  const g = guestById(activeThreadGuest);
+  const t = INBOX_THREADS.find(x=>x.guest===activeThreadGuest);
+  const view = document.getElementById('thread-view');
+  view.innerHTML = `
+    <div class="thread-header">
+      <button class="chip-link" style="font-size:14px" onclick="openGuest('${g.id}')">${ICONS.link}${g.name}</button>
+      ${g.vip?'<span class="pill pill-vip">VIP</span>':''}
+      <span style="margin-left:auto" class="sync-pill"><span class="sync-dot"></span>Synced 2m ago</span>
+    </div>
+    <div class="thread-messages">
+      <div class="msg guest">Hi! Just confirming check-in time for our stay.</div>
+      <div class="msg host">Hi ${g.name.split(' ')[0]}, check-in opens at 3pm — I'll send the door code the morning of.</div>
+      <div class="msg guest">${t.last}</div>
+    </div>
+    <div class="composer">
+      <input type="text" placeholder="Write a reply…">
+      <button class="suggest-btn">✨ Suggest reply</button>
+      <button class="btn btn-primary">Send</button>
+    </div>`;
+}
+
+/* ---------- RENDER: GUESTS ---------- */
+function renderGuests(){
+  const body = document.getElementById('guest-table-body');
+  body.innerHTML = GUESTS.map(g=>{
+    const current = RESERVATIONS.find(r=>r.guest===g.id && new Date(r.out+'T00:00:00') >= CAL_START);
+    return `<tr>
+      <td><div class="guest-cell"><div class="guest-dot">${g.name.split(' ').map(w=>w[0]).join('')}</div>
+        <button class="chip-link" onclick="openGuest('${g.id}')">${g.name}</button></div></td>
+      <td>${g.vip?'<span class="pill pill-vip">VIP</span>':'<span class="pill pill-cancelled">Standard</span>'}</td>
+      <td>${g.stays}</td>
+      <td>${current?`<button class="chip-link" onclick="openReservation('${current.id}')">${listingById(current.listing).name}</button>`:'—'}</td>
+      <td class="mono" style="font-size:12px; color:var(--ink-soft)">${g.contact}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---------- RENDER: TASKS ---------- */
+function renderTasks(){
+  const rows = [];
+  RESERVATIONS.forEach(r=>{
+    r.tasks.forEach(task=>{
+      rows.push({...task, resId:r.id, listing:listingById(r.listing).name, guest:guestById(r.guest).name});
+    });
+  });
+  const list = document.getElementById('task-list');
+  list.innerHTML = rows.map(t=>`
+    <div class="task-row">
+      <div class="task-check ${t.done?'done':''}">${t.done?'✓':''}</div>
+      <div class="task-title ${t.done?'done':''}">${t.t} ${t.overdue?'<span style="color:var(--danger); font-weight:600; font-size:11.5px;"> · overdue</span>':''}</div>
+      <div class="task-meta">${t.listing} · <button class="chip-link" onclick="openReservation('${t.resId}')">${t.resId}</button> · ${t.guest}</div>
+    </div>`).join('');
+}
+
+/* ---------- DRAWER SYSTEM ---------- */
+let drawerStack = [];
+function renderReservationDrawer(id){
+  const r = resById(id), g = guestById(r.guest), l = listingById(r.listing);
+  document.getElementById('drawer-title').textContent = 'Reservation ' + r.id;
+  document.getElementById('drawer-body').innerHTML = `
+    <div class="drawer-section">
+      <span class="pill pill-${r.status}">${r.status==='confirmed'?'✓ Confirmed':r.status==='pending'?'Pending':'Cancelled'}</span>
+      <div style="margin-top:8px; font-size:15px; font-weight:600;">${fmtDate(r.in)} → ${fmtDate(r.out)} · ${dayIndex(r.out)-dayIndex(r.in)} nights</div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-label">Guest</div>
+      <div class="drawer-card">
+        <button class="chip-link" style="font-size:14.5px" onclick="openGuest('${g.id}')">${ICONS.link}${g.name}</button>
+        <div style="color:var(--ink-soft); font-size:12.5px; margin-top:3px;">${g.vip?'VIP · ':''}${g.stays} previous stays</div>
+      </div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-label">Property</div>
+      <div class="drawer-card"><button class="chip-link" onclick="go('listings')">${ICONS.link}${l.name}</button></div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-label">Payment</div>
+      <div class="drawer-card" style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="mono" style="font-size:15px; font-weight:600;">$${r.paid.toLocaleString()}</span>
+        <span class="pill ${r.paidStatus==='Paid'?'pill-confirmed':'pill-pending'}">${r.paidStatus}</span>
+      </div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-label">Channel</div>
+      <div class="drawer-card sync-pill" style="display:inline-flex;"><span class="sync-dot"></span>${r.channel} · Synced 2m ago</div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-label">Special requests</div>
+      <div class="drawer-card" style="font-size:13px;">${r.request}</div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-label">Tasks</div>
+      <div class="drawer-card">
+        ${r.tasks.length ? r.tasks.map(t=>`<div style="display:flex; align-items:center; gap:8px; padding:4px 0; font-size:13px;">
+            <span style="color:${t.done?'var(--success)':'var(--ink-faint)'}">${t.done?'✓':'○'}</span>
+            <span style="${t.done?'text-decoration:line-through; color:var(--ink-faint);':''}">${t.t}</span>
+            ${t.overdue?'<span style="color:var(--danger); font-size:11px; font-weight:600;">overdue</span>':''}
+          </div>`).join('') : '<span style="color:var(--ink-faint); font-size:13px;">No tasks yet</span>'}
+      </div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-label">Conversation</div>
+      <button class="drawer-card chip-link" style="display:block; text-align:left; width:100%; font-weight:400;" onclick="openGuestThread('${g.id}')">
+        "${INBOX_THREADS.find(t=>t.guest===g.id)?.last || 'No messages yet'}" ${ICONS.link}
+      </button>
+    </div>`;
+}
+function renderGuestDrawer(id){
+  const g = guestById(id);
+  const stays = RESERVATIONS.filter(r=>r.guest===id);
+  const current = stays.find(r=> new Date(r.out+'T00:00:00') >= CAL_START);
+  document.getElementById('drawer-title').textContent = g.name;
+  document.getElementById('drawer-body').innerHTML = `
+    <div class="drawer-section">
+      ${g.vip?'<span class="pill pill-vip">VIP</span> ':''}<span style="color:var(--ink-soft); font-size:13px;">${g.stays} previous stays</span>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-label">Contact</div>
+      <div class="drawer-card mono" style="font-size:12.5px;">${g.contact}</div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-label">Current reservation</div>
+      ${current ? `<button class="drawer-card chip-link" style="display:block; width:100%; text-align:left;" onclick="openReservation('${current.id}')">
+          ${ICONS.link}${listingById(current.listing).name} · ${fmtDate(current.in)} → ${fmtDate(current.out)}
+        </button>` : '<div class="drawer-card" style="color:var(--ink-faint); font-size:13px;">No upcoming stay</div>'}
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-label">Previous stays</div>
+      <div class="drawer-card">${stays.length} reservation${stays.length!==1?'s':''} on file</div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-label">Notes</div>
+      <div class="drawer-card" style="font-size:13px;">${g.notes}</div>
+    </div>
+    <div class="drawer-section">
+      <button class="btn btn-ghost" style="width:100%; justify-content:center;" onclick="openGuestThread('${g.id}')">Open conversation</button>
+    </div>`;
+}
+function pushDrawer(type, id){
+  drawerStack.push({type,id});
+  renderDrawerTop();
+  document.getElementById('backdrop').classList.add('show');
+  document.getElementById('drawer').classList.add('show');
+  document.getElementById('drawer-back').style.display = drawerStack.length>1 ? 'flex' : 'none';
+}
+function renderDrawerTop(){
+  const top = drawerStack[drawerStack.length-1];
+  if(top.type==='reservation') renderReservationDrawer(top.id);
+  if(top.type==='guest') renderGuestDrawer(top.id);
+  if(top.type==='listing') renderListingDrawer(top.id);
+  if(top.type==='listing-edit') renderListingEditor();
+}
+let galleryIndex = 0;
+const PHOTO_TINTS = ['var(--teal-soft)','var(--clay-soft)','var(--blue-soft)','var(--success-soft)','var(--warning-soft)'];
+function renderListingDrawer(id){
+  galleryIndex = 0;
+  const l = listingById(id);
+  const owner = ownerById(l.ownerId);
+  const agent = agentById(l.agentId);
+  document.getElementById('drawer-title').textContent = l.name;
+  document.getElementById('drawer-body').innerHTML = `
+    <div class="drawer-section" id="listing-gallery"></div>
+    <div class="drawer-section">
+      <div class="drawer-label">Type</div>
+      <div class="drawer-card">${l.type}</div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-label">Nightly rate</div>
+      <div class="drawer-card mono" style="font-size:16px; font-weight:600;">$${l.rate}/night</div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-label">Posted by</div>
+      <div class="drawer-card">${ownerLabel(l)}${agent?` · managed by ${agent.name}`:''}</div>
+    </div>
+    ${CURRENT_ROLE==='client'?`<div class="drawer-section"><button class="btn btn-primary" style="width:100%; justify-content:center;">Book now</button></div>`:''}`;
+  renderGallery(l);
+}
+function renderGallery(l){
+  const photos = (l.photos && l.photos.length) ? l.photos : [{type:'placeholder', label:'No photos yet'}];
+  galleryIndex = ((galleryIndex % photos.length) + photos.length) % photos.length;
+  const p = photos[galleryIndex];
+  const slide = p.type==='image'
+    ? `<img src="${p.src}" alt="${l.name}" class="gallery-img">`
+    : `<div class="gallery-placeholder" style="background:linear-gradient(135deg, ${PHOTO_TINTS[galleryIndex % PHOTO_TINTS.length]}, var(--paper));">${ICONS.home2}<span>${p.label||'Photo'}</span></div>`;
+  const canEdit = (CURRENT_ROLE==='owner' && l.ownerId===CURRENT_OWNER) || (CURRENT_ROLE==='agent' && !l.ownerId && l.agentId===CURRENT_AGENT);
+  document.getElementById('listing-gallery').innerHTML = `
+    <div class="gallery-frame">
+      ${slide}
+      ${photos.length>1?`
+        <button class="gallery-arrow left" onclick="galleryShift('${l.id}',-1)">‹</button>
+        <button class="gallery-arrow right" onclick="galleryShift('${l.id}',1)">›</button>`:''}
+      <div class="gallery-count">${galleryIndex+1} / ${photos.length}</div>
+    </div>
+    ${canEdit?`<button class="btn btn-ghost" style="width:100%; justify-content:center; margin-top:8px;" onclick="openListingEditor('${l.id}')">Edit listing</button>`:''}`;
+}
+function galleryShift(listingId, dir){
+  galleryIndex += dir;
+  renderGallery(listingById(listingId));
+}
+function openReservation(id){ pushDrawer('reservation', id); }
+function openGuest(id){ pushDrawer('guest', id); }
+function openListing(id){ pushDrawer('listing', id); }
+function openGuestThread(guestId){
+  closeDrawer();
+  go('inbox');
+  selectThread(guestId);
+}
+function drawerBack(){
+  drawerStack.pop();
+  renderDrawerTop();
+  document.getElementById('drawer-back').style.display = drawerStack.length>1 ? 'flex' : 'none';
+}
+function closeDrawer(){
+  drawerStack = [];
+  document.getElementById('backdrop').classList.remove('show');
+  document.getElementById('drawer').classList.remove('show');
+}
+
+/* ---------- INIT ---------- */
+renderCalendar();
+renderReservations();
+renderListings();
+renderInbox();
+renderGuests();
+renderTasks();
+setRole('agent');
+</script>
+</body>
+</html>
