@@ -6,17 +6,21 @@ export default function TopBar({
   currentOwner,
   currentGuestClient,
   currentAgent,
+  currentStaff,
   setRole,
   ownerById,
   guestById,
+  fieldStaffById,
   BRAND_TAG,
   SEARCH_LABEL,
   AGENTS,
   GUESTS,
   OWNERS,
+  FIELD_STAFF = [],
   setCurrentOwner,
   setCurrentGuestClient,
   setCurrentAgent,
+  setCurrentStaff,
   onToggleSidebar,
   isSidebarOpen,
   searchQuery,
@@ -111,9 +115,9 @@ export default function TopBar({
       </div>
       <div className="topbar-right">
         <div className="role-switch" id="role-switch" role="group" aria-label="Switch app role">
-          {['agent', 'owner', 'client'].map((role) => (
+          {['agent', 'owner', 'client', 'field'].map((role) => (
             <button key={role} className={`role-btn ${currentRole === role ? 'active' : ''}`} type="button" data-role={role} onClick={() => setRole(role)}>
-              {role === 'agent' ? 'Agent' : role === 'owner' ? 'Owner' : 'Client'}
+              {role === 'agent' ? 'Agent' : role === 'owner' ? 'Owner' : role === 'client' ? 'Client' : 'On-site'}
             </button>
           ))}
         </div>
@@ -121,27 +125,31 @@ export default function TopBar({
           className="role-select"
           id="role-person-select"
           aria-label={`Select ${currentRole} account`}
-          value={currentRole === 'owner' ? currentOwner : currentRole === 'client' ? currentGuestClient : currentAgent}
+          value={currentRole === 'owner' ? currentOwner : currentRole === 'client' ? currentGuestClient : currentRole === 'field' ? currentStaff : currentAgent}
           onChange={(e) => {
             if (currentRole === 'owner') setCurrentOwner(e.target.value);
             if (currentRole === 'client') setCurrentGuestClient(e.target.value);
             if (currentRole === 'agent') setCurrentAgent(e.target.value);
+            if (currentRole === 'field') setCurrentStaff?.(e.target.value);
           }}
           style={{ display: 'inline-block' }}
         >
           {currentRole === 'owner' && OWNERS.map((o) => <option key={o.id} value={o.id}>Viewing as {o.name}</option>)}
           {currentRole === 'client' && GUESTS.map((g) => <option key={g.id} value={g.id}>Viewing as {g.name}</option>)}
           {currentRole === 'agent' && AGENTS.map((a) => <option key={a.id} value={a.id}>Viewing as {a.name}</option>)}
+          {currentRole === 'field' && FIELD_STAFF.map((f) => <option key={f.id} value={f.id}>Viewing as {f.name}</option>)}
         </select>
         <div className="sync-pill" id="context-pill">
-          {currentRole === 'agent' ? <><span className="sync-dot pulse" />All channels synced · 2m ago</> : <><span className="portal-dot" />{currentRole === 'owner' ? 'Read-only owner portal' : 'Guest view'}</>}
+          {currentRole === 'agent' ? <><span className="sync-dot pulse" />All channels synced · 2m ago</> : currentRole === 'field' ? <><span className="sync-dot pulse" />Jobs synced with the office</> : <><span className="portal-dot" />{currentRole === 'owner' ? 'Read-only owner portal' : 'Guest view'}</>}
         </div>
         <div className="avatar" id="avatar">
           {currentRole === 'agent'
             ? 'SA'
             : currentRole === 'owner'
               ? ownerById(currentOwner)?.name.split(' ').map((w) => w[0]).join('')
-              : guestById(currentGuestClient)?.name.split(' ').map((w) => w[0]).join('')}
+              : currentRole === 'field'
+                ? (fieldStaffById?.(currentStaff)?.name || 'FS').split(' ').map((w) => w[0]).join('')
+                : guestById(currentGuestClient)?.name.split(' ').map((w) => w[0]).join('')}
         </div>
       </div>
     </div>

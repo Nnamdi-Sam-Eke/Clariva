@@ -37,9 +37,8 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
-node_modules/
 
 # Frontend builds
 .next/
 .nuxt/
-dist/
+.vercel/

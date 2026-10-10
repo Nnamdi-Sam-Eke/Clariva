@@ -210,6 +210,7 @@ button { cursor: pointer; }
   text-align: left;
   position: relative;
 }
+.nav-item-label { flex: 1; min-width: 0; }
 .nav-item svg { flex: none; opacity: 0.75; }
 .nav-item:hover { background: var(--paper); color: var(--ink); }
 .nav-item.active { background: var(--teal-soft); color: var(--teal); }
@@ -1152,4 +1153,217 @@ body[data-role="client"] .gallery-placeholder { color: var(--clay); }
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ── Field staff (cleaner / maintenance) ── */
+.field-view { max-width: 560px; margin: 0 auto; }
+.field-cal-view { max-width: 920px; }
+.field-hero { margin-bottom: 18px; }
+.field-greeting h1 {
+  font-family: 'Fraunces', serif;
+  font-size: 26px;
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+.field-role-line { color: var(--ink-soft); font-size: 13.5px; margin-bottom: 14px; }
+.field-filter-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.field-pill {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  min-height: 40px;
+}
+.field-pill.active { background: var(--teal); border-color: var(--teal); color: #fff; }
+.field-task-list, .field-msg-list, .field-prop-list, .field-maint-alerts {
+  display: flex; flex-direction: column; gap: 12px;
+}
+.field-task-card, .field-msg-card, .field-prop-card, .field-maint-alert-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+.field-task-card.is-overdue {
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--line));
+  background: linear-gradient(180deg, var(--danger-soft), var(--surface));
+}
+.field-task-card.is-done { opacity: 0.72; }
+.field-task-top { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.field-kind {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 3px 8px; border-radius: 6px; background: var(--teal-soft); color: var(--teal);
+}
+.field-kind.maintenance { background: var(--danger-soft); color: var(--danger); }
+.field-overdue-tag { font-size: 11px; font-weight: 700; color: var(--danger); }
+.field-done-tag { font-size: 11px; font-weight: 700; color: var(--success); }
+.field-task-title { margin: 0 0 10px; font-size: 17px; font-weight: 600; line-height: 1.3; }
+.field-task-meta {
+  display: flex; flex-direction: column; gap: 4px;
+  font-size: 13px; color: var(--ink-soft); margin-bottom: 12px;
+}
+.field-access {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 14px; background: var(--paper); border-radius: 10px; margin-bottom: 12px;
+  border: 1px dashed var(--line);
+}
+.field-access-label { font-size: 12px; color: var(--ink-faint); font-weight: 500; }
+.field-access-code { font-size: 22px; font-weight: 700; letter-spacing: 0.12em; color: var(--ink); }
+.field-notes { font-size: 13px; color: var(--ink-soft); margin-bottom: 10px; line-height: 1.45; }
+.field-complete-block { display: flex; flex-direction: column; gap: 8px; }
+.field-note-input {
+  width: 100%; border: 1px solid var(--line); border-radius: 10px;
+  padding: 12px 14px; font-size: 14px; min-height: 44px; background: var(--surface);
+}
+.field-complete-btn { min-height: 48px; font-size: 15px; width: 100%; justify-content: center; }
+.field-empty { text-align: center; padding: 32px 16px; color: var(--ink-faint); font-size: 14px; }
+.field-msg-card.is-unread {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--blue) 25%, transparent);
+}
+.field-msg-card.from-owner { border-left: 3px solid var(--clay); }
+.field-msg-card.from-agent { border-left: 3px solid var(--teal); }
+.field-msg-card.from-maintenance { border-left: 3px solid var(--danger); background: linear-gradient(180deg, var(--danger-soft), var(--surface)); }
+.field-msg-top { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.field-msg-from { font-weight: 600; font-size: 13.5px; }
+.field-msg-role { font-weight: 400; color: var(--ink-faint); }
+.field-msg-time { font-size: 11.5px; color: var(--ink-faint); white-space: nowrap; }
+.field-msg-listing { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 6px; }
+.field-msg-text { margin: 0 0 10px; font-size: 14px; line-height: 1.5; }
+.field-msg-replies { background: var(--paper); border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; font-size: 13px; }
+.field-msg-reply { margin-bottom: 4px; }
+.field-msg-reply-row { display: flex; gap: 8px; align-items: center; }
+.field-prop-name { font-weight: 600; font-size: 16px; margin-bottom: 4px; }
+.field-prop-meta { font-size: 13px; color: var(--ink-soft); margin-bottom: 10px; }
+.field-maint-alert-title { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 15px; }
+.field-maint-bar { color: #fff; font-weight: 600; }
+.role-switch .role-btn { padding: 7px 8px; font-size: 11px; }
+
+.field-section-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  margin-bottom: 8px;
+}
+.field-cal-hint {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--blue) 35%, var(--line));
+  background: var(--blue-soft);
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+.page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* On-site month calendar (booking-style) */
+.field-month-grid .booking-dow {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-faint);
+  padding: 4px 0;
+}
+.field-cal-day {
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.field-cal-day.outside-month { opacity: 0.25; }
+.field-cal-day.field-day-free { background: var(--surface); }
+.field-cal-day.field-day-guest { background: var(--teal-soft); color: var(--teal); border-color: var(--teal); }
+.field-cal-day.field-day-pending { background: var(--warning-soft); color: var(--warning); border-color: var(--warning); }
+.field-cal-day.field-day-offline { background: var(--clay-soft); color: var(--clay); border-color: var(--clay); }
+.field-cal-day.field-day-work { background: var(--danger-soft); color: var(--danger); border-color: var(--danger); }
+.field-cal-day.selected { box-shadow: 0 0 0 2px var(--ink); }
+.field-cal-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.field-cal-legend i.field-leg {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: middle;
+  border: 1px solid var(--line);
+}
+.field-leg.free { background: var(--surface); }
+.field-leg.guest { background: var(--teal-soft); border-color: var(--teal); }
+.field-leg.pending { background: var(--warning-soft); border-color: var(--warning); }
+.field-leg.offline { background: var(--clay-soft); border-color: var(--clay); }
+.field-leg.work { background: var(--danger-soft); border-color: var(--danger); }
+
+.field-upcoming-dropdown {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 0;
+  margin-top: 4px;
+}
+.field-upcoming-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  user-select: none;
+}
+.field-upcoming-summary::-webkit-details-marker { display: none; }
+.field-upcoming-summary::after {
+  content: '▾';
+  color: var(--ink-faint);
+  font-size: 12px;
+  transition: transform 0.15s ease;
+}
+.field-upcoming-dropdown[open] > .field-upcoming-summary::after {
+  transform: rotate(180deg);
+}
+.field-upcoming-count {
+  margin-left: auto;
+  margin-right: 8px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 20px;
+  background: var(--line);
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.field-upcoming-dropdown .field-maint-alerts {
+  padding: 0 12px 12px;
 }

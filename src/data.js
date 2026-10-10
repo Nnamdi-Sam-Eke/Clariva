@@ -39,6 +39,26 @@ export const AGENTS = [
   { id: 'A2', name: 'Tolu Bankole', role: 'Field Agent' }
 ];
 
+export const FIELD_STAFF = [
+  { id: 'F1', name: 'Bisi Okonkwo', role: 'Lead Cleaner', skills: ['cleaning', 'turnover'], phone: '+234 801 555 0101' },
+  { id: 'F2', name: 'Ibrahim Musa', role: 'Maintenance', skills: ['maintenance', 'AC', 'plumbing'], phone: '+234 802 555 0102' },
+  { id: 'F3', name: 'Chioma Eze', role: 'Cleaner', skills: ['cleaning'], phone: '+234 803 555 0103' },
+];
+
+export const FIELD_MESSAGES_SEED = [
+  { id: 'fm-1', toStaffId: 'F1', fromRole: 'agent', fromId: 'A1', fromName: 'Sam Adeyemi', listingId: 'L1', text: 'Villa Lagos checkout cleaning is priority — guest left at 10am, next arrival is 3pm.', at: '2026-08-20T10:15:00', read: false, type: 'dispatch' },
+  { id: 'fm-2', toStaffId: 'F1', fromRole: 'agent', fromId: 'A1', fromName: 'Sam Adeyemi', listingId: 'L5', text: 'Garden Cottage also needs turnover today after Tom Becker departs.', at: '2026-08-20T10:18:00', read: false, type: 'dispatch' },
+  { id: 'fm-3', toStaffId: 'F2', fromRole: 'owner', fromId: 'O1', fromName: 'Adaeze Nwosu', listingId: 'L1', text: '[Maintenance] Please confirm the AC at Villa Lagos was serviced before the next guest arrives.', at: '2026-08-20T09:00:00', read: false, type: 'owner-request' },
+  { id: 'fm-4', toStaffId: 'F2', fromRole: 'agent', fromId: 'A2', fromName: 'Tolu Bankole', listingId: 'L4', text: 'Downtown Loft — guest reported weak shower pressure. Check when you can today.', at: '2026-08-20T08:40:00', read: true, type: 'dispatch' },
+  { id: 'fm-5', toStaffId: 'all', fromRole: 'agent', fromId: 'A1', fromName: 'Sam Adeyemi', listingId: null, text: 'Reminder: photo required after every cleaning before marking complete.', at: '2026-08-19T17:00:00', read: true, type: 'broadcast' },
+];
+
+/** Seed maintenance blocks — visible on field calendar only as maintenance */
+export const MAINTENANCE_BLOCKS_SEED = [
+  { id: 'MAINT-seed-1', listing: 'L1', in: '2026-08-26', out: '2026-08-28', reason: 'AC service + filter replacement', actorRole: 'owner', actorId: 'O1', createdAt: '2026-08-19T12:00:00' },
+  { id: 'MAINT-seed-2', listing: 'L4', in: '2026-08-22', out: '2026-08-23', reason: 'Shower pressure repair', actorRole: 'agent', actorId: 'A2', createdAt: '2026-08-20T08:00:00' },
+];
+
 export const GUESTS = [
   { id: 'G1', name: 'Sarah Johnson', vip: true, stays: 8, notes: 'Prefers late check-in. Allergic to feather pillows.', contact: 'sarah.j@mail.com · +1 202 555 0148' },
   { id: 'G2', name: 'Michael Chen', vip: false, stays: 2, notes: 'First-time guest, asked good local coffee spots.', contact: 'm.chen@mail.com · +1 415 555 0110' },
@@ -55,12 +75,15 @@ export const NOTICES = [
 ];
 
 export const RESERVATIONS = [
-  { id: 'RES-10482', guest: 'G1', listing: 'L1', in: '2026-08-21', out: '2026-08-25', channel: 'Booking.com', status: 'confirmed', paid: 1240, paidStatus: 'Paid', request: 'Late check-in requested (after 9pm).', tasks: [{ t: 'Pre-arrival inspection', done: true }, { t: 'Cleaning after checkout', done: false, overdue: true }] },
-  { id: 'RES-10483', guest: 'G2', listing: 'L1', in: '2026-08-27', out: '2026-08-30', channel: 'Direct', status: 'confirmed', paid: 860, paidStatus: 'Paid', request: '—', tasks: [{ t: 'Welcome message', done: true }, { t: 'Check minibar restock', done: false }] },
+  { id: 'RES-10482', guest: 'G1', listing: 'L1', in: '2026-08-21', out: '2026-08-25', channel: 'Booking.com', status: 'confirmed', paid: 1240, paidStatus: 'Paid', request: 'Late check-in requested (after 9pm).', tasks: [{ t: 'Pre-arrival inspection', done: true }, { t: 'Cleaning after checkout', done: false, overdue: true, assignee: 'F1', kind: 'cleaning', accessCode: '4821' }] },
+  { id: 'RES-10483', guest: 'G2', listing: 'L1', in: '2026-08-27', out: '2026-08-30', channel: 'Direct', status: 'confirmed', paid: 860, paidStatus: 'Paid', request: '—', tasks: [{ t: 'Welcome message', done: true }, { t: 'Check minibar restock', done: false, assignee: 'F1', kind: 'cleaning' }] },
   { id: 'RES-10484', guest: 'G3', listing: 'L2', in: '2026-08-22', out: '2026-08-27', channel: 'Airbnb', status: 'confirmed', paid: 590, paidStatus: 'Paid', request: 'Early arrival at 2pm if possible.', tasks: [{ t: 'Arrival guide', done: true }, { t: 'Key handoff', done: true }] },
   { id: 'RES-10485', guest: 'G4', listing: 'L3', in: '2026-08-24', out: '2026-08-29', channel: 'Booking.com', status: 'pending', paid: 600, paidStatus: 'Pending', request: 'Quiet room requested.', tasks: [{ t: 'Confirm parking', done: false }, { t: 'Send lock code', done: false }] },
   { id: 'RES-10486', guest: 'G5', listing: 'L4', in: '2026-08-25', out: '2026-08-27', channel: 'Airbnb', status: 'confirmed', paid: 260, paidStatus: 'Paid', request: 'No special requests.', tasks: [{ t: 'Upload policy info', done: true }] },
-  { id: 'RES-10487', guest: 'G6', listing: 'L5', in: '2026-08-28', out: '2026-09-01', channel: 'Direct', status: 'confirmed', paid: 440, paidStatus: 'Paid', request: 'Late checkout requested.', tasks: [{ t: 'Prepare breakfast kit', done: false }] },
+  { id: 'RES-10487', guest: 'G6', listing: 'L5', in: '2026-08-28', out: '2026-09-01', channel: 'Direct', status: 'confirmed', paid: 440, paidStatus: 'Paid', request: 'Late checkout requested.', tasks: [{ t: 'Prepare breakfast kit', done: false, assignee: 'F3', kind: 'cleaning' }] },
+  { id: 'RES-10488', guest: 'G2', listing: 'L4', in: '2026-08-20', out: '2026-08-22', channel: 'Airbnb', status: 'confirmed', paid: 280, paidStatus: 'Paid', request: '—', tasks: [{ t: 'Check-in briefing', done: true }, { t: 'Cleaning after checkout', done: false, overdue: true, assignee: 'F1', kind: 'cleaning', dueDate: '2026-08-20', accessCode: '3301' }] },
+  { id: 'RES-10491', guest: 'G4', listing: 'L5', in: '2026-08-20', out: '2026-08-23', channel: 'Direct', status: 'confirmed', paid: 310, paidStatus: 'Paid', request: '—', tasks: [{ t: 'Key handoff', done: true }, { t: 'Cleaning after checkout', done: false, overdue: true, assignee: 'F3', kind: 'cleaning', dueDate: '2026-08-20', accessCode: '7710' }] },
+  { id: 'RES-10493', guest: 'G1', listing: 'L1', in: '2026-08-18', out: '2026-08-20', channel: 'Direct', status: 'confirmed', paid: 440, paidStatus: 'Paid', request: '—', tasks: [{ t: 'AC service check', done: false, overdue: true, assignee: 'F2', kind: 'maintenance', dueDate: '2026-08-20', accessCode: '4821', notes: 'Owner requested confirmation before next guest.' }] },
 ];
 
 export const INBOX_THREADS = [
@@ -75,15 +98,16 @@ export const NAV_CONFIG = {
   agent: [
     { label: 'Core', items: [
       { view: 'dashboard', icon: 'home', text: 'Dashboard' },
-      { view: 'inbox', icon: 'msg', text: 'Inbox', badge: 12 },
+      { view: 'inbox', icon: 'msg', text: 'Inbox' },
       { view: 'calendar', icon: 'cal', text: 'Calendar' },
       { view: 'reservations', icon: 'book', text: 'Reservations' },
       { view: 'listings', icon: 'home2', text: 'Listings' },
       { view: 'guests', icon: 'user', text: 'Guests' },
-      { view: 'tasks', icon: 'check', text: 'Tasks', badge: 3 },
+      { view: 'tasks', icon: 'check', text: 'Tasks' },
     ] },
     { label: 'Owners', items: [
       { view: 'agent-notices', icon: 'msg', text: 'Notices' },
+      { view: 'agent-field-replies', icon: 'msg', text: 'On-site replies' },
       { view: 'agent-owner-hub', icon: 'user', text: 'Owner Hub' },
     ] },
     { label: 'Manage', items: [
@@ -106,6 +130,7 @@ export const NAV_CONFIG = {
     ] },
     { label: 'Team', items: [
       { view: 'owner-notices', icon: 'msg', text: 'Notices' },
+      { view: 'owner-job-updates', icon: 'check', text: 'Job updates' },
       { view: 'owner-agent-hub', icon: 'user', text: 'Agent Hub' },
     ] },
   ],
@@ -118,12 +143,21 @@ export const NAV_CONFIG = {
       { view: 'client-explore', icon: 'home2', text: 'Explore Stays' },
     ] },
   ],
+  field: [
+    { label: 'Today', items: [
+      { view: 'field-today', icon: 'check', text: 'Today' },
+      { view: 'field-messages', icon: 'msg', text: 'Inbox' },
+      { view: 'field-calendar', icon: 'cal', text: 'Calendar' },
+      { view: 'field-properties', icon: 'home2', text: 'Homes' },
+    ] },
+  ],
 };
 
 export const SEARCH_LABEL = {
   agent: 'Search reservations, guests, listings…',
   owner: 'Search your properties…',
   client: 'Search your booking…',
+  field: 'Search jobs…',
 };
 
-export const BRAND_TAG = { agent: 'Operator', owner: 'Owner Portal', client: 'Guest' };
+export const BRAND_TAG = { agent: 'Operator', owner: 'Owner Portal', client: 'Guest', field: 'On-site team' };

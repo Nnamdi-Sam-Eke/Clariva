@@ -74,27 +74,17 @@ export default function Sidebar({ currentNavItems, activeView, go, isOpen, onNav
               className={`nav-item ${activeView === item.view ? 'active' : ''}`}
               type="button"
               data-view={item.view}
-              aria-label={item.text}
-              aria-describedby={item.badge ? `nav-badge-description-${item.view}` : undefined}
+              aria-label={item.badge ? `${item.text}, ${item.badge}` : item.text}
               onClick={() => {
                 if (item.view !== 'stub') go(item.view);
                 onNavigate();
               }}
             >
               <Icon name={item.icon} />
-              {item.text}
-              {item.badge ? <>
+              <span className="nav-item-label">{item.text}</span>
+              {item.badge != null && item.badge !== '' && Number(item.badge) > 0 && (
                 <span className="nav-badge" aria-hidden="true">{item.badge}</span>
-                <span className="sr-only" id={`nav-badge-description-${item.view}`}>
-                  {item.view === 'reservations' || item.view === 'owner-reservations'
-                    ? `${item.badge} pending booking requests`
-                    : item.view === 'inbox'
-                      ? `${item.badge} unread messages`
-                      : item.view === 'tasks'
-                        ? `${item.badge} outstanding tasks`
-                        : `${item.badge} notifications`}
-                </span>
-              </> : null}
+              )}
             </button>
           ))}
         </div>

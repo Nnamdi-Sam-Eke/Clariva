@@ -5,9 +5,12 @@ import {
   CAL_DAYS,
   CAL_START,
   CHANNEL_COLOR,
+  FIELD_MESSAGES_SEED,
+  FIELD_STAFF,
   GUESTS,
   INBOX_THREADS,
   LISTINGS,
+  MAINTENANCE_BLOCKS_SEED,
   NAV_CONFIG,
   NOTICES,
   OWNERS,
@@ -23,6 +26,7 @@ import Drawer from './components/Drawer';
 import AgentViews from './views/AgentViews';
 import OwnerViews from './views/OwnerViews';
 import ClientViews from './views/ClientViews';
+import FieldViews from './views/FieldViews';
 import { createInitialConversations, isConversationArray } from './state/conversations';
 import { isRecordArray, usePersistentState } from './state/persistence';
 import { useReservations } from './state/reservations';
@@ -46,6 +50,10 @@ function ownerById(id) {
 
 function agentById(id) {
   return AGENTS.find((a) => a.id === id);
+}
+
+function fieldStaffById(id) {
+  return FIELD_STAFF.find((f) => f.id === id);
 }
 
 function guestById(id) {
@@ -160,6 +168,64 @@ function App() {
   const [currentOwner, setCurrentOwner] = useState('O1');
   const [currentGuestClient, setCurrentGuestClient] = useState('G1');
   const [currentAgent, setCurrentAgent] = useState('A1');
+  const [currentStaff, setCurrentStaff] = useState('F1');
+  const [fieldMessages, setFieldMessages] = useState(() => {
+    try {
+      const raw = window.localStorage.getItem('clariva.field-messages.v1');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) { /* ignore */ }
+    return FIELD_MESSAGES_SEED;
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('clariva.field-messages.v1', JSON.stringify(fieldMessages));
+    } catch (e) { /* ignore */ }
+  }, [fieldMessages]);
+  const [ownerJobUpdates, setOwnerJobUpdates] = useState(() => {
+    try {
+      const raw = window.localStorage.getItem('clariva.owner-job-updates.v1');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) { /* ignore */ }
+    return [];
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('clariva.owner-job-updates.v1', JSON.stringify(ownerJobUpdates));
+    } catch (e) { /* ignore */ }
+  }, [ownerJobUpdates]);
+
+  const notifyPeople = ({ title, body, whatsappText, phone }) => {
+    // Browser notification (if allowed)
+    try {
+      if (typeof Notification !== 'undefined') {
+        if (Notification.permission === 'granted') {
+          new Notification(title, { body, silent: false });
+        } else if (Notification.permission !== 'denied') {
+          Notification.requestPermission().then((perm) => {
+            if (perm === 'granted') new Notification(title, { body });
+          });
+        }
+      }
+    } catch (e) { /* ignore */ }
+    // WhatsApp deep link (opens chat with prefilled text — user sends)
+    if (whatsappText) {
+      try {
+        const digits = String(phone || '').replace(/\D/g, '') || '';
+        const url = digits
+          ? `https://wa.me/${digits}?text=${encodeURIComponent(whatsappText)}`
+          : `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
+        window.__clarivaLastWhatsApp = url;
+      } catch (e) { /* ignore */ }
+    }
+  };
+
+
   const [calendarStart, setCalendarStart] = useState(CAL_START);
   const [activeView, setActiveView] = useState('dashboard');
   const [drawerStack, setDrawerStack] = useState([]);
@@ -189,7 +255,7 @@ function App() {
   );
   const [reviews, setReviews, reviewsStorageError] = usePersistentState('clariva.reviews.v1', [], isReviewArray);
   const [reviewResponses, setReviewResponses, reviewResponsesStorageError] = usePersistentState('clariva.review-responses.v1', [], isReviewResponseArray);
-  const [maintenanceBlocks, setMaintenanceBlocks, maintenanceStorageError] = usePersistentState('clariva.maintenance-blocks.v1', [], isMaintenanceBlockArray);
+  const [maintenanceBlocks, setMaintenanceBlocks, maintenanceStorageError] = usePersistentState('clariva.maintenance-blocks.v1', MAINTENANCE_BLOCKS_SEED, isMaintenanceBlockArray);
   const [auditHistory, setAuditHistory, auditStorageError] = usePersistentState('clariva.audit-history.v1', [], isAuditArray);
   const [conversations, setConversations, conversationsStorageError] = usePersistentState(
     'clariva.conversations.v1',
@@ -204,6 +270,11 @@ function App() {
   const [bookingError, setBookingError] = useState('');
   const [isBookingSubmitting, setIsBookingSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
+  useEffect(() => {
+    if (!statusMessage) return undefined;
+    const t = window.setTimeout(() => setStatusMessage(''), 8000);
+    return () => window.clearTimeout(t);
+  }, [statusMessage]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [noticeTarget, setNoticeTarget] = useState('all');
 
@@ -341,7 +412,13 @@ function App() {
     setCurrentRole(role);
     setDrawerStack([]);
     setIsSidebarOpen(false);
-    const nextView = role === 'agent' ? 'dashboard' : role === 'owner' ? 'owner-dashboard' : 'client-booking';
+    const nextView = role === 'agent'
+      ? 'dashboard'
+      : role === 'owner'
+        ? 'owner-dashboard'
+        : role === 'field'
+          ? 'field-today'
+          : 'client-booking';
     setActiveView(nextView);
   };
 
@@ -427,9 +504,41 @@ function App() {
       action: 'maintenance-block-created',
       details: `Blocked ${fmtDate(checkIn)} to ${fmtDate(checkOut)}: ${block.reason}`,
     });
+    // Notify field staff immediately — maintenance calendar + messages
+    const listingName = listing?.name || listingId;
+    const actorName = currentRole === 'owner'
+      ? (ownerById(currentOwner)?.name || 'Owner')
+      : (agentById(currentAgent)?.name || 'Agent');
+    setFieldMessages((previous) => [
+      {
+        id: `fm-maint-${block.id}`,
+        toStaffId: 'F2',
+        fromRole: currentRole === 'owner' ? 'owner' : 'agent',
+        fromId: currentRole === 'owner' ? currentOwner : currentAgent,
+        fromName: actorName,
+        listingId,
+        text: `Maintenance blocked on ${listingName}: ${fmtDate(checkIn)} → ${fmtDate(checkOut)}. ${block.reason}. Open Maintenance calendar for the full schedule.`,
+        at: createdAt,
+        read: false,
+        type: 'maintenance-alert',
+      },
+      {
+        id: `fm-maint-all-${block.id}`,
+        toStaffId: 'all',
+        fromRole: currentRole === 'owner' ? 'owner' : 'agent',
+        fromId: currentRole === 'owner' ? currentOwner : currentAgent,
+        fromName: actorName,
+        listingId,
+        text: `New maintenance window: ${listingName} (${fmtDate(checkIn)} → ${fmtDate(checkOut)}).`,
+        at: createdAt,
+        read: false,
+        type: 'maintenance-alert',
+      },
+      ...previous,
+    ]);
     setBookingError('');
     setDrawerStack((stack) => stack.slice(0, -1));
-    setStatusMessage(`Maintenance block added for ${listing.name}.`);
+    setStatusMessage(`Dates blocked for work at ${listing.name}. On-site team notified.`);
     return true;
   };
 
@@ -1216,27 +1325,322 @@ function App() {
     setDrawerStack([]);
   };
 
-  const sendOwnerNotice = (event) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const target = String(formData.get('notice-target') || 'all');
-    const text = String(formData.get('notice-text') || '').trim();
+  const sendOwnerNotice = (eventOrPayload) => {
+    let target = 'all';
+    let text = '';
+    let requestType = 'general';
+    let listingId = null;
+    let routeField = false;
+    let formEl = null;
+
+    if (eventOrPayload && typeof eventOrPayload.preventDefault === 'function') {
+      eventOrPayload.preventDefault();
+      formEl = eventOrPayload.currentTarget;
+      const formData = new FormData(formEl);
+      target = String(formData.get('notice-target') || noticeTarget || 'all');
+      text = String(formData.get('notice-text') || '').trim();
+      requestType = String(formData.get('notice-type') || 'general');
+      listingId = String(formData.get('notice-listing') || '') || null;
+      routeField = String(formData.get('notice-route-field-flag') || '0') === '1'
+        || formData.get('notice-route-field') === 'on';
+    } else if (eventOrPayload && typeof eventOrPayload === 'object') {
+      target = String(eventOrPayload.target || noticeTarget || 'all');
+      text = String(eventOrPayload.text || '').trim();
+      requestType = String(eventOrPayload.requestType || 'general');
+      listingId = eventOrPayload.listingId || null;
+      routeField = Boolean(eventOrPayload.routeField);
+    }
+
+    // Repair / guest problem always alert on-site unless explicitly off
+    if ((requestType === 'maintenance' || requestType === 'guest_issue') && eventOrPayload?.routeField !== false) {
+      if (eventOrPayload && typeof eventOrPayload.preventDefault === 'function') {
+        // keep form flag
+      } else if (eventOrPayload?.routeField === undefined) {
+        routeField = true;
+      }
+    }
+
     if (!text) {
-      setStatusMessage('Enter a notice before sending.');
-      return;
+      setStatusMessage('Write a short note before sending.');
+      return false;
     }
     if (text.length > 2000) {
-      setStatusMessage('Notices must be 2,000 characters or fewer.');
-      return;
+      setStatusMessage('Notes must be 2,000 characters or fewer.');
+      return false;
     }
+
+    const noticeId = `N${Date.now()}`;
+    const ownerName = ownerById(currentOwner)?.name || 'Owner';
+    const listingName = listingId ? (listingById(listingId)?.name || listingId) : null;
+    const typePrefix = requestType !== 'general' ? `[${requestType.replace('_', ' ')}] ` : '';
+    const shouldAlertOnsite = Boolean(routeField);
 
     setNotices((prev) => [
       ...prev,
-      { id: `N${Date.now()}`, ownerId: currentOwner, agentId: target, date: new Date().toISOString().slice(0, 10), text },
+      {
+        id: noticeId,
+        ownerId: currentOwner,
+        agentId: target,
+        date: new Date().toISOString().slice(0, 10),
+        text: `${typePrefix}${text}`,
+        requestType,
+        listingId,
+        routedToField: shouldAlertOnsite,
+      },
     ]);
-    event.currentTarget.reset();
+
+    if (shouldAlertOnsite) {
+      const toStaff = requestType === 'maintenance' ? 'F2' : 'all';
+      setFieldMessages((previous) => [
+        {
+          id: `fm-owner-${noticeId}`,
+          toStaffId: toStaff,
+          fromRole: 'owner',
+          fromId: currentOwner,
+          fromName: ownerName,
+          listingId,
+          text: listingName ? `${typePrefix}${text} — ${listingName}` : `${typePrefix}${text}`,
+          at: new Date().toISOString(),
+          read: false,
+          type: requestType === 'maintenance' ? 'maintenance-alert' : 'owner-request',
+        },
+        ...previous,
+      ]);
+    }
+
+    if (formEl && typeof formEl.reset === 'function') {
+      formEl.reset();
+    }
     setNoticeTarget('all');
-    setStatusMessage('Notice sent.');
+    setStatusMessage(
+      shouldAlertOnsite
+        ? 'Sent to your agent and the on-site team.'
+        : 'Sent to your agent.'
+    );
+    return true;
+  };
+
+  const currentStaffMember = fieldStaffById(currentStaff);
+
+  const fieldTasks = useMemo(() => {
+    const rows = [];
+    reservations.forEach((r) => {
+      (r.tasks || []).forEach((task, taskIndex) => {
+        if (task.assignee === currentStaff) {
+          rows.push({
+            ...task,
+            resId: r.id,
+            taskIndex,
+            listingId: r.listing,
+            guestId: r.guest,
+          });
+        }
+      });
+    });
+    return rows;
+  }, [reservations, currentStaff]);
+
+  const fieldMessagesForStaff = useMemo(
+    () => fieldMessages.filter((m) => m.toStaffId === currentStaff || m.toStaffId === 'all'),
+    [fieldMessages, currentStaff],
+  );
+
+  const fieldUnreadCount = fieldMessagesForStaff.filter((m) => !m.read).length;
+
+  const assignTask = (reservationId, taskIndex, staffId) => {
+    const staff = fieldStaffById(staffId);
+    setReservations((previous) => previous.map((reservation) => {
+      if (reservation.id !== reservationId) return reservation;
+      return {
+        ...reservation,
+        tasks: (reservation.tasks || []).map((task, index) => (
+          index === taskIndex
+            ? { ...task, assignee: staffId || undefined, kind: task.kind || 'cleaning' }
+            : task
+        )),
+      };
+    }));
+    const res = reservations.find((r) => r.id === reservationId);
+    const task = res?.tasks?.[taskIndex];
+    const listing = res ? listingById(res.listing) : null;
+    if (staffId && task) {
+      setFieldMessages((prev) => [
+        {
+          id: `fm-assign-${Date.now()}`,
+          toStaffId: staffId,
+          fromRole: 'agent',
+          fromId: currentAgent,
+          fromName: agentById(currentAgent)?.name || 'Office',
+          listingId: res?.listing || null,
+          text: `New job assigned: “${task.t}”${listing ? ` at ${listing.name}` : ''}. Open Today to see it.`,
+          at: new Date().toISOString(),
+          read: false,
+          type: 'dispatch',
+        },
+        ...prev,
+      ]);
+      notifyPeople({
+        title: 'New job assigned',
+        body: `${task.t}${listing ? ` · ${listing.name}` : ''}`,
+        whatsappText: `Clariva job for ${staff?.name || 'you'}: ${task.t}${listing ? ` at ${listing.name}` : ''}`,
+        phone: staff?.phone,
+      });
+    }
+    setStatusMessage(staff
+      ? `Assigned to ${staff.name.split(' ')[0]}. They will see it under Today.`
+      : 'Assignee cleared.');
+    return true;
+  };
+
+  const completeFieldTask = (reservationId, taskIndex, note = '') => {
+    const staff = fieldStaffById(currentStaff);
+    setReservations((previous) => previous.map((reservation) => {
+      if (reservation.id !== reservationId) return reservation;
+      return {
+        ...reservation,
+        tasks: (reservation.tasks || []).map((task, index) => (
+          index === taskIndex
+            ? {
+              ...task,
+              done: true,
+              overdue: false,
+              completionNote: note || undefined,
+              completedAt: new Date().toISOString(),
+              completedBy: currentStaff,
+            }
+            : task
+        )),
+      };
+    }));
+    const res = reservations.find((r) => r.id === reservationId);
+    const task = res?.tasks?.[taskIndex];
+    if (typeof recordAudit === 'function') {
+      recordAudit({
+        entityType: 'task',
+        entityId: `${reservationId}-${taskIndex}`,
+        listingId: res?.listing || '',
+        action: 'field-task-completed',
+        details: `${staff?.name || 'Field staff'} completed “${task?.t || 'task'}”${note ? `: ${note}` : ''}`,
+      });
+    }
+    // Notify owner of this home (job done feed)
+    if (res?.listing) {
+      const listing = listingById(res.listing);
+      if (listing?.ownerId) {
+        const update = {
+          id: `job-${Date.now()}`,
+          ownerId: listing.ownerId,
+          listingId: listing.id,
+          listingName: listing.name,
+          taskTitle: task?.t || 'Job',
+          note: note || '',
+          staffId: currentStaff,
+          staffName: staff?.name || 'On-site',
+          reservationId,
+          at: new Date().toISOString(),
+          read: false,
+        };
+        setOwnerJobUpdates((prev) => [update, ...prev]);
+        notifyPeople({
+          title: 'Job done on your home',
+          body: `${update.taskTitle} · ${listing.name} · ${update.staffName}`,
+          whatsappText: `Clariva: ${update.staffName} finished “${update.taskTitle}” at ${listing.name}.${note ? ` Note: ${note}` : ''}`,
+        });
+      }
+    }
+    notifyPeople({
+      title: 'Job marked done',
+      body: `${task?.t || 'Task'} — office can see it`,
+      whatsappText: `Clariva: ${staff?.name || 'On-site'} marked “${task?.t || 'task'}” done.`,
+    });
+    setStatusMessage('Marked done — office and owner can see this now.');
+    return true;
+  };
+
+  const markFieldMessageRead = (msgId) => {
+    setFieldMessages((prev) => prev.map((m) => (m.id === msgId ? { ...m, read: true } : m)));
+  };
+
+  const replyFieldMessage = (msgId, text) => {
+    const staff = fieldStaffById(currentStaff);
+    setFieldMessages((prev) => prev.map((m) => {
+      if (m.id !== msgId) return m;
+      const replies = [...(m.replies || []), {
+        id: `fmr-${Date.now()}`,
+        fromName: staff?.name || 'Field staff',
+        fromStaffId: currentStaff,
+        text,
+        at: new Date().toISOString(),
+      }];
+      return { ...m, replies, read: true };
+    }));
+    notifyPeople({
+      title: 'On-site reply',
+      body: `${staff?.name || 'On-site'}: ${text.slice(0, 80)}`,
+      whatsappText: `Clariva reply from ${staff?.name || 'on-site'}: ${text}`,
+    });
+    setStatusMessage('Reply sent — office can see it under On-site replies.');
+    return true;
+  };
+
+  const dispatchFieldMessage = ({ toStaffId, listingId, text }) => {
+    const body = String(text || '').trim();
+    if (!body) {
+      setStatusMessage('Write a message before sending.');
+      return false;
+    }
+    const agent = agentById(currentAgent);
+    const staff = toStaffId && toStaffId !== 'all' ? fieldStaffById(toStaffId) : null;
+    const who = staff ? staff.name.split(' ')[0] : 'everyone on-site';
+    const msg = {
+      id: `fm-dispatch-${Date.now()}`,
+      toStaffId: toStaffId || 'all',
+      fromRole: 'agent',
+      fromId: currentAgent,
+      fromName: agent?.name || 'Office',
+      listingId: listingId || null,
+      text: body,
+      at: new Date().toISOString(),
+      read: false,
+      type: 'dispatch',
+    };
+    setFieldMessages((prev) => [msg, ...prev]);
+    try { window.__clarivaLastFieldMsg = msg; } catch (e) { /* ignore */ }
+    const staffPhone = staff?.phone;
+    notifyPeople({
+      title: 'Message to on-site',
+      body: `${who}: ${body.slice(0, 80)}`,
+      whatsappText: `Clariva: ${body}`,
+      phone: staffPhone,
+    });
+    setStatusMessage(`Sent to ${who}: “${body.slice(0, 60)}${body.length > 60 ? '…' : ''}” — switch to On-site → Inbox to read it.`);
+    return true;
+  };
+
+  const markOwnerJobRead = (id) => {
+    setOwnerJobUpdates((prev) => prev.map((u) => (u.id === id ? { ...u, read: true } : u)));
+  };
+
+  const openWhatsAppLast = () => {
+    const url = window.__clarivaLastWhatsApp;
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+    else setStatusMessage('Send a message or complete a job first, then try WhatsApp again.');
+  };
+
+  const requestBrowserNotifyPermission = () => {
+    try {
+      if (typeof Notification === 'undefined') {
+        setStatusMessage('This browser does not support desktop notifications.');
+        return;
+      }
+      Notification.requestPermission().then((perm) => {
+        setStatusMessage(perm === 'granted'
+          ? 'Desktop alerts on. You will get a popup when jobs are assigned or finished.'
+          : 'Notifications blocked. You can enable them in browser settings.');
+      });
+    } catch (e) {
+      setStatusMessage('Could not enable desktop alerts.');
+    }
   };
 
   const viewContext = {
@@ -1257,7 +1661,11 @@ function App() {
     submitStayReview,
     handleReservationDecision, requestClientReservationAction, handleClientActionDecision, isBookingSubmitting,
     noticeTarget, setNoticeTarget,
-  };
+    FIELD_STAFF, currentStaff, currentStaffMember, fieldTasks, fieldMessages: fieldMessagesForStaff,
+    completeFieldTask, assignTask, markFieldMessageRead, replyFieldMessage, dispatchFieldMessage,
+    fieldMessagesAll: fieldMessages, ownerJobUpdates, markOwnerJobRead, openWhatsAppLast, requestBrowserNotifyPermission,
+    maintenanceBlocks, calendarStart, setCalendarStart,
+};
 
   const renderActivePage = () => {
     if (currentRole === 'agent') {
@@ -1271,10 +1679,16 @@ function App() {
       return <OwnerViews view={activeView} context={viewContext} />;
     }
 
-    if (activeView === 'client-calendar') return <CalendarView mode="client" listings={listings} renderCalendarGrid={renderCalendarGrid} startDate={calendarStart} onChangeStartDate={setCalendarStart} />;
+    
+    if (currentRole === 'field') {
+      return <FieldViews view={activeView} context={viewContext} />;
+    }
+
+if (activeView === 'client-calendar') return <CalendarView mode="client" listings={listings} renderCalendarGrid={renderCalendarGrid} startDate={calendarStart} onChangeStartDate={setCalendarStart} />;
     return <ClientViews view={activeView} context={viewContext} />;
   };
 
+  // Sidebar: numeric badges only (no "notifications" / "reservations" text beside the number)
   const reservationBadgeCount = currentRole === 'agent'
     ? pendingAgentRequests.length
     : currentRole === 'owner'
@@ -1283,13 +1697,49 @@ function App() {
   const clientNotificationBadgeCount = unreadClientNotifications.length;
   const currentNavItems = NAV_CONFIG[currentRole].map((group) => ({
     ...group,
-    items: group.items.map((item) => (
-      item.view === 'reservations' || item.view === 'owner-reservations'
-        ? { ...item, badge: reservationBadgeCount }
-        : item.view === 'client-notifications'
-          ? { ...item, badge: clientNotificationBadgeCount }
-        : item
-    )),
+    items: group.items.map((item) => {
+      if (item.view === 'reservations' || item.view === 'owner-reservations') {
+        return { ...item, badge: reservationBadgeCount || undefined };
+      }
+      if (item.view === 'client-notifications') {
+        return { ...item, badge: clientNotificationBadgeCount || undefined };
+      }
+      if (item.view === 'inbox') {
+        const unread = (conversationThreads || []).reduce((n, t) => n + (t.unread || 0), 0);
+        return { ...item, badge: unread || undefined };
+      }
+      if (item.view === 'tasks') {
+        const open = (reservations || []).reduce(
+          (n, r) => n + (r.tasks || []).filter((t) => !t.done).length,
+          0,
+        );
+        return { ...item, badge: open || undefined };
+      }
+      if (item.view === 'field-messages') {
+        return { ...item, badge: fieldUnreadCount || undefined };
+      }
+      if (item.view === 'field-today') {
+        const open = fieldTasks.filter((t) => !t.done).length;
+        return { ...item, badge: open || undefined };
+      }
+      if (item.view === 'field-calendar') {
+        return { ...item, badge: (maintenanceBlocks?.length) || undefined };
+      }
+      if (item.view === 'agent-field-replies') {
+        const n = (fieldMessages || []).filter((m) => (m.replies || []).length > 0).length;
+        return { ...item, badge: n || undefined };
+      }
+      if (item.view === 'owner-job-updates') {
+        const n = (ownerJobUpdates || []).filter((u) => u.ownerId === currentOwner && !u.read).length;
+        return { ...item, badge: n || undefined };
+      }
+      // Never put explanatory text in badge — numbers only
+      if (item.badge != null && typeof item.badge !== 'number') {
+        const n = parseInt(String(item.badge).replace(/\D/g, ''), 10);
+        return { ...item, badge: Number.isFinite(n) && n > 0 ? n : undefined };
+      }
+      return item;
+    }),
   }));
 
   return (
@@ -1299,17 +1749,21 @@ function App() {
         currentOwner={currentOwner}
         currentGuestClient={currentGuestClient}
         currentAgent={currentAgent}
+        currentStaff={currentStaff}
         setRole={setRole}
         ownerById={ownerById}
         guestById={guestById}
+        fieldStaffById={fieldStaffById}
         BRAND_TAG={BRAND_TAG}
         SEARCH_LABEL={SEARCH_LABEL}
         AGENTS={AGENTS}
         GUESTS={GUESTS}
         OWNERS={OWNERS}
+        FIELD_STAFF={FIELD_STAFF}
         setCurrentOwner={setCurrentOwner}
         setCurrentGuestClient={setCurrentGuestClient}
         setCurrentAgent={setCurrentAgent}
+        setCurrentStaff={setCurrentStaff}
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={() => setIsSidebarOpen((isOpen) => !isOpen)}
         searchQuery={searchQuery}

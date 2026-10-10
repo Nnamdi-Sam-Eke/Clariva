@@ -1,8 +1,9 @@
+import { useState } from 'react';
 import Icon from '../components/Icon';
 import { ReservationsView } from './AgentViews';
 
 export function OwnerDashboardView({ context }) {
-  const { AGENTS, CAL_START, GUESTS, INBOX_THREADS, RESERVATIONS, activeThreadGuest, agentById, agentListings, agentOwners, currentAgent, currentGuestClient, currentOwner, currentRole, dayIndex, fmtDate, go, guestById, listingById, listings, notices, openGuest, openGuestThread, openListing, openListingEditor, openReservation, ownerAgents, ownerById, ownerLabel, ownerListings, ownerReservations, pendingOwnerRequests = [], receivedNoticesForAgent, sendOwnerNotice, setActiveThreadGuest } = context;
+  const { AGENTS, CAL_START, GUESTS, INBOX_THREADS, RESERVATIONS, activeThreadGuest, agentById, agentListings, agentOwners, currentAgent, currentGuestClient, currentOwner, currentRole, dayIndex, fmtDate, go, guestById, listingById, listings, notices, openGuest, openGuestThread, openListing, openListingEditor, openReservation, ownerAgents, ownerById, ownerLabel, ownerListings, ownerReservations, pendingOwnerRequests = [], ownerJobUpdates = [], receivedNoticesForAgent, sendOwnerNotice, setActiveThreadGuest } = context;
   
 
     const owner = ownerById(currentOwner);
@@ -134,35 +135,171 @@ export function OwnerReportsView({ context }) {
 }
 
 export function OwnerNoticesView({ context }) {
-  const { AGENTS, CAL_START, GUESTS, INBOX_THREADS, RESERVATIONS, activeThreadGuest, agentById, agentListings, agentOwners, currentAgent, currentGuestClient, currentOwner, currentRole, dayIndex, fmtDate, go, guestById, listingById, listings, notices, openGuest, openGuestThread, openListing, openListingEditor, openReservation, ownerAgents, ownerById, ownerLabel, ownerListings, ownerReservations, receivedNoticesForAgent, sendOwnerNotice, setActiveThreadGuest, noticeTarget, setNoticeTarget } = context;
-  
+  const {
+    agentById, currentOwner, fmtDate, notices, ownerAgents, ownerListings,
+    sendOwnerNotice, noticeTarget, setNoticeTarget, listingById,
+  } = context;
+  const [requestType, setRequestType] = useState('general');
+  const [listingId, setListingId] = useState(ownerListings[0]?.id || '');
+  const [routeField, setRouteField] = useState(true);
+  const [text, setText] = useState('');
+  const [justSent, setJustSent] = useState(false);
 
-    const sent = [...notices].filter((n) => n.ownerId === currentOwner).sort((a, b) => b.date.localeCompare(a.date));
-    return (
-      <div className="view active">
-        <div className="page-head"><div><h1 className="page-title">Notices</h1><div className="page-sub">Send a note straight to the agents managing your properties.</div></div></div>
-        <form className="card" style={{ padding: '16px 18px', marginBottom: '16px' }} onSubmit={sendOwnerNotice}>
-          <div className="drawer-label" style={{ marginBottom: '8px' }}>New notice</div>
-          <label className="sr-only" htmlFor="notice-target">Send notice to</label>
-          <select className="role-select" id="notice-target" name="notice-target" value={noticeTarget} onChange={(event) => setNoticeTarget(event.target.value)} style={{ width: '100%', marginBottom: '8px' }}>
-            <option value="all">All agents</option>
-            {ownerAgents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-          </select>
-          <label className="sr-only" htmlFor="notice-text">Notice message</label>
-          <textarea id="notice-text" name="notice-text" maxLength="2000" placeholder="Write your notice…" style={{ width: '100%', minHeight: '70px', border: '1px solid var(--line)', borderRadius: '8px', padding: '10px', fontFamily: 'inherit', fontSize: '13px', marginBottom: '8px', resize: 'vertical' }} />
-          <button className="btn btn-primary" type="submit">Send notice</button>
-        </form>
-        <div className="card">
-          {sent.length ? sent.map((n) => (
-            <div className="property-readonly" key={n.id} style={{ alignItems: 'flex-start' }}>
-              <div><div style={{ fontWeight: 600, fontSize: '13px' }}>To {n.agentId === 'all' ? 'All agents' : agentById(n.agentId)?.name}</div><div style={{ fontSize: '13px', marginTop: '3px' }}>{n.text}</div></div>
-              <div className="readonly-note">{fmtDate(n.date)}</div>
-            </div>
-          )) : <div style={{ padding: '20px', textAlign: 'center', color: 'var(--ink-faint)' }}>No notices sent yet.</div>}
+  const sent = [...notices].filter((n) => n.ownerId === currentOwner).sort((a, b) => b.date.localeCompare(a.date));
+
+  const [sendError, setSendError] = useState('');
+  const handleSend = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setSendError('');
+    if (!text.trim()) {
+      setSendError('Type a note first.');
+      return;
+    }
+    if (typeof sendOwnerNotice !== 'function') {
+      setSendError('Send is not connected. Re-copy App.jsx from the update zip.');
+      return;
+    }
+    const ok = sendOwnerNotice({
+      target: noticeTarget,
+      text,
+      requestType,
+      listingId: listingId || null,
+      routeField: Boolean(routeField),
+    });
+    if (ok === false) {
+      setSendError('Could not send. Try again.');
+      return;
+    }
+    setText('');
+    setJustSent(true);
+    window.setTimeout(() => setJustSent(false), 4000);
+  };
+
+  const typeLabel = {
+    general: 'General note',
+    maintenance: 'Repair needed',
+    pricing: 'Pricing change',
+    block_dates: 'Block dates',
+    guest_issue: 'Guest problem',
+  };
+
+  return (
+    <div className="view active">
+      <div className="page-head">
+        <div>
+          <h1 className="page-title">Notices</h1>
+          <div className="page-sub">
+            Send a note to your agent. For repairs or guest problems, you can also alert the on-site team.
+          </div>
         </div>
       </div>
-    );
-  
+      <form className="card" style={{ padding: '16px 18px', marginBottom: '16px' }} onSubmit={handleSend}>
+        <div className="drawer-label" style={{ marginBottom: '8px' }}>New request</div>
+        <label className="sr-only" htmlFor="notice-type">Request type</label>
+        <select
+          className="role-select"
+          id="notice-type"
+          name="notice-type"
+          value={requestType}
+          onChange={(e) => {
+            setRequestType(e.target.value);
+            if (e.target.value === 'maintenance') setRouteField(true);
+          }}
+          style={{ width: '100%', marginBottom: '8px' }}
+        >
+          <option value="general">General note</option>
+          <option value="maintenance">Repair needed</option>
+          <option value="pricing">Pricing change</option>
+          <option value="block_dates">Block dates</option>
+          <option value="guest_issue">Guest problem</option>
+        </select>
+        <label className="sr-only" htmlFor="notice-listing">Property</label>
+        <select
+          className="role-select"
+          id="notice-listing"
+          name="notice-listing"
+          value={listingId}
+          onChange={(e) => setListingId(e.target.value)}
+          style={{ width: '100%', marginBottom: '8px' }}
+        >
+          <option value="">All / unspecified property</option>
+          {ownerListings.map((l) => (
+            <option key={l.id} value={l.id}>{l.name}</option>
+          ))}
+        </select>
+        <label className="sr-only" htmlFor="notice-target">Send notice to</label>
+        <select
+          className="role-select"
+          id="notice-target"
+          name="notice-target"
+          value={noticeTarget}
+          onChange={(event) => setNoticeTarget(event.target.value)}
+          style={{ width: '100%', marginBottom: '8px' }}
+        >
+          <option value="all">All agents</option>
+          {ownerAgents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+        </select>
+        {(requestType === 'maintenance' || requestType === 'guest_issue') && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, fontSize: 13 }}>
+            <input
+              type="checkbox"
+              name="notice-route-field"
+              checked={routeField}
+              onChange={(e) => setRouteField(e.target.checked)}
+            />
+            Also alert the on-site team (cleaners / repairs)
+          </label>
+        )}
+        <input type="hidden" name="notice-route-field-flag" value={routeField ? '1' : '0'} />
+        <label className="sr-only" htmlFor="notice-text">Notice message</label>
+        <textarea
+          id="notice-text"
+          name="notice-text"
+          maxLength={2000}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={requestType === 'maintenance' ? 'What needs fixing? (e.g. AC not cooling)' : 'Write your note…'}
+          style={{ width: '100%', minHeight: '70px', border: '1px solid var(--line)', borderRadius: '8px', padding: '10px 12px', fontFamily: 'inherit', fontSize: '13.5px', resize: 'vertical' }}
+        />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
+          <span className="readonly-note">
+            {requestType === 'maintenance' && routeField
+              ? 'Your agent and the on-site team will see this'
+              : 'Your agent will see this'}
+          </span>
+          {sendError && <div style={{ color: 'var(--danger)', fontSize: 13 }}>{sendError}</div>}
+          {justSent && (
+            <div style={{ background: 'var(--success-soft)', border: '1px solid var(--success)', borderRadius: 8, padding: 10, fontSize: 13, marginBottom: 8 }}>
+              Sent. {routeField ? 'Agent + on-site team notified.' : 'Agent notified.'} Switch to On-site → Inbox to verify.
+            </div>
+          )}
+          <button className="btn btn-primary" type="button" onClick={handleSend} disabled={!text.trim()}>
+            {justSent ? 'Sent!' : 'Send'}
+          </button>
+        </div>
+      </form>
+      <div className="card">
+        {sent.length ? sent.map((n) => (
+          <div className="property-readonly" key={n.id} style={{ alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: '13px' }}>
+                {n.requestType ? (typeLabel[n.requestType] || n.requestType) : 'Notice'}
+                {n.agentId === 'all' ? ' · all agents' : agentById(n.agentId) ? ` · ${agentById(n.agentId).name}` : ''}
+                {n.routedToField ? ' · on-site alerted' : ''}
+              </div>
+              {n.listingId && (
+                <div className="readonly-note">{listingById?.(n.listingId)?.name || n.listingId}</div>
+              )}
+              <div style={{ fontSize: '13px', marginTop: '3px' }}>{n.text}</div>
+            </div>
+            <div className="readonly-note">{fmtDate(n.date)}</div>
+          </div>
+        )) : (
+          <div style={{ padding: '20px', textAlign: 'center', color: 'var(--ink-faint)' }}>No notices sent yet.</div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function OwnerAgentHubView({ context }) {
@@ -191,6 +328,74 @@ export function OwnerAgentHubView({ context }) {
   
 }
 
+
+export function OwnerJobUpdatesView({ context }) {
+  const {
+    ownerJobUpdates = [],
+    currentOwner,
+    markOwnerJobRead,
+    fmtDate,
+    requestBrowserNotifyPermission,
+    openWhatsAppLast,
+  } = context;
+
+  const updates = [...ownerJobUpdates]
+    .filter((u) => u.ownerId === currentOwner)
+    .sort((a, b) => b.at.localeCompare(a.at));
+  const unread = updates.filter((u) => !u.read).length;
+
+  return (
+    <div className="view active">
+      <div className="page-head">
+        <div>
+          <h1 className="page-title">Job updates</h1>
+          <div className="page-sub">
+            When on-site staff finish work on your homes, it shows up here — no need to chase the agent.
+            {unread ? ` ${unread} new.` : ''}
+          </div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+        <button type="button" className="btn btn-ghost" onClick={() => requestBrowserNotifyPermission?.()}>
+          Enable desktop alerts
+        </button>
+        <button type="button" className="btn btn-ghost" onClick={() => openWhatsAppLast?.()}>
+          Open last WhatsApp alert
+        </button>
+      </div>
+      <div className="card">
+        {updates.length === 0 && (
+          <div style={{ padding: 24, textAlign: 'center', color: 'var(--ink-faint)' }}>
+            No finished jobs yet. When a cleaner or repair person marks a job done on your home, it appears here.
+          </div>
+        )}
+        {updates.map((u) => (
+          <div
+            key={u.id}
+            className="property-readonly"
+            style={{
+              alignItems: 'flex-start',
+              borderLeft: u.read ? undefined : '3px solid var(--success)',
+              cursor: 'pointer',
+            }}
+            onClick={() => !u.read && markOwnerJobRead?.(u.id)}
+          >
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 13.5 }}>
+                {u.taskTitle}
+                {!u.read && <span style={{ color: 'var(--success)', marginLeft: 8, fontSize: 11 }}>New</span>}
+              </div>
+              <div className="readonly-note">{u.listingName} · by {u.staffName}</div>
+              {u.note && <div style={{ fontSize: 13, marginTop: 4 }}>{u.note}</div>}
+            </div>
+            <div className="readonly-note">{new Date(u.at).toLocaleString()}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function OwnerViews({ view, context }) {
   switch (view) {
     case 'owner-dashboard': return <OwnerDashboardView context={context} />;
@@ -199,6 +404,7 @@ export default function OwnerViews({ view, context }) {
     case 'owner-financials': return <OwnerFinancialsView context={context} />;
     case 'owner-reports': return <OwnerReportsView context={context} />;
     case 'owner-notices': return <OwnerNoticesView context={context} />;
+    case 'owner-job-updates': return <OwnerJobUpdatesView context={context} />;
     case 'owner-agent-hub': return <OwnerAgentHubView context={context} />;
     default: return null;
   }
